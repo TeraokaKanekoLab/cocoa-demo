@@ -1,0 +1,3 @@
+type1 movie
+type2 user
+type1_count 83239

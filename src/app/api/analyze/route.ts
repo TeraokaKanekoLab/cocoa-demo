@@ -1,0 +1,120 @@
+import { NextResponse } from 'next/server';
+import GraphRunner from '@/lib/graphRunner';
+import { getDb } from '@/lib/db';
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const runner = GraphRunner.getInstance();
+
+    // ------------------------------------------
+    // パターンA: パラメータ調整 (Stage 2)
+    // ------------------------------------------
+    if (typeof body.c === 'number') {
+      // Clamp incoming C to avoid exact -1/+1 values which may cause
+      // edge behavior in the C++ adjustment logic.
+      const CLAMP_MAX = 0.9999;
+      const clampC = (v: number) => Math.max(-CLAMP_MAX, Math.min(CLAMP_MAX, v));
+      const cValue = Number.isFinite(body.c) ? clampC(body.c) : 0;
+
+      const result = await runner.execute({
+        type: "adjust",
+        c: cValue
+      });
+      // adjust でも C++ は配列を返す（正常時）。配列ならID->name 変換して返す
+      const db = await getDb();
+      if (Array.isArray(result)) {
+        const ids = result.map((r: any) => r.id);
+        if (ids.length > 0) {
+          const placeholders2 = ids.map(() => '?').join(',');
+          const rows2 = await db.all(
+            `SELECT id, name FROM nodes WHERE id IN (${placeholders2})`,
+            ids
+          );
+          const idToName = new Map<number, string>();
+          rows2.forEach((r: any) => idToName.set(r.id, r.name));
+
+          const top_nodes = result.map((r: any) => ({
+            id: r.id,
+            name: idToName.get(r.id) ?? String(r.id),
+            score: r.score,
+          }));
+
+          return NextResponse.json({ status: 'ok', top_nodes });
+        }
+      }
+
+      return NextResponse.json(result);
+    }
+
+    // ------------------------------------------
+    // パターンB: 新規解析 (Stage 1)
+    // ------------------------------------------
+    else if (Array.isArray(body.items) && body.items.length > 0) {
+      const { items } = body; // [{name: "A", weight: 1.0}, ...]
+      
+      const db = await getDb();
+      const nodeNames = items.map((i: any) => i.name);
+      
+      // 名前 -> ID 一括変換
+      const placeholders = nodeNames.map(() => '?').join(',');
+      const rows = await db.all(
+        `SELECT id, name FROM nodes WHERE name IN (${placeholders})`,
+        nodeNames
+      );
+
+      // マップ作成 (Name -> ID)
+      const nameToId = new Map<string, number>();
+      rows.forEach((r: any) => nameToId.set(r.name, r.id));
+
+      // C++送信用リスト作成
+      const queryList = [];
+      for (const item of items) {
+        if (nameToId.has(item.name)) {
+          queryList.push({
+            id: nameToId.get(item.name),
+            w: Number(item.weight)
+          });
+        }
+      }
+
+      if (queryList.length === 0) {
+        return NextResponse.json({ error: 'Valid nodes not found' }, { status: 404 });
+      }
+
+      const result = await runner.execute({
+        type: "analyze",
+        queries: queryList
+      });
+      // 結果が配列 (C++ の実装は成功時に配列を返す)
+      if (Array.isArray(result)) {
+        const ids = result.map((r: any) => r.id);
+        if (ids.length > 0) {
+          const placeholders2 = ids.map(() => '?').join(',');
+          const rows2 = await db.all(
+            `SELECT id, name FROM nodes WHERE id IN (${placeholders2})`,
+            ids
+          );
+          const idToName = new Map<number, string>();
+          rows2.forEach((r: any) => idToName.set(r.id, r.name));
+
+          const top_nodes = result.map((r: any) => ({
+            id: r.id,
+            name: idToName.get(r.id) ?? String(r.id),
+            score: r.score,
+          }));
+
+          return NextResponse.json({ status: 'ok', top_nodes });
+        }
+      }
+
+      return NextResponse.json(result);
+    }
+
+    return NextResponse.json({ error: 'Invalid Parameters' }, { status: 400 });
+
+  } catch (error) {
+    console.error('API Error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
