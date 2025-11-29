@@ -1,4 +1,5 @@
 .vscode
 build
+.env
 data/index_to_title.txt
 data/indexed_edges.txt

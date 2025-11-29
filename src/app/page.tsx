@@ -37,6 +37,10 @@ export default function Home() {
   // UI状態
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Groq analysis UI state
+  const [groqLoading, setGroqLoading] = useState(false);
+  const [groqError, setGroqError] = useState('');
+  const [groqOutput, setGroqOutput] = useState('');
 
   // --- サジェスト機能 ---
   useEffect(() => {
@@ -123,7 +127,9 @@ export default function Home() {
     if (queryItems.length === 0) return;
     setLoading(true);
     setError('');
-    setCParam(0.0); // パラメータリセット
+    setCParam(0.0);
+    setGroqOutput('');
+    setGroqError('');
 
     try {
       // タイムアウト付き（30秒）のfetch
@@ -243,6 +249,51 @@ export default function Home() {
 
     // No request in-flight: start sending
     void sendAdjust(clamped);
+  };
+
+  // --- Groq Explain: send ranking + names/scores to /api/groq ---
+  const handleGroqExplain = async () => {
+    if (results.length === 0) return;
+    setGroqLoading(true);
+    setGroqError('');
+    setGroqOutput('');
+
+    try {
+      const payload = {
+        rankings: results.map((r) => ({ name: r.name ?? String(r.id), score: r.score })),
+      };
+
+      const res = await fetch('/api/groq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        setGroqError(`Server Error ${res.status}: ${text}`);
+      } else {
+        try {
+          const data = JSON.parse(text);
+          // expect { analysis: '...' }
+          if (data && data.analysis) {
+            setGroqOutput(String(data.analysis));
+          } else if (typeof data === 'string') {
+            setGroqOutput(data);
+          } else {
+            setGroqOutput(JSON.stringify(data, null, 2));
+          }
+        } catch (e) {
+          // not JSON
+          setGroqOutput(text);
+        }
+      }
+    } catch (e) {
+      console.error('Groq request failed', e);
+      setGroqError('Network error');
+    } finally {
+      setGroqLoading(false);
+    }
   };
 
   return (
@@ -444,6 +495,29 @@ export default function Home() {
               ))}
             </tbody>
           </table>
+          {/* Groq explain button and panel */}
+          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div />
+            <div style={{ textAlign: 'right' }}>
+              <button
+                onClick={handleGroqExplain}
+                disabled={groqLoading}
+                style={{ padding: '0.6rem 1rem', background: groqLoading ? '#ccc' : '#6c63ff', color: 'white', border: 'none', borderRadius: '6px', cursor: groqLoading ? 'not-allowed' : 'pointer' }}
+              >
+                {groqLoading ? 'Explaining...' : 'Explain with AI'}
+              </button>
+            </div>
+          </div>
+
+          {/* Analysis Panel (shows response from Groq) */}
+          <div style={{ marginTop: '1rem' }}>
+              <h4 style={{ marginBottom: '0.5rem' }}>AI Analysis</h4>
+              {groqError && <div style={{ color: 'red', marginBottom: '0.5rem' }}>{groqError}</div>}
+              <div style={{ background: '#f8f8ff', padding: '1rem', borderRadius: '6px', minHeight: '80px' }}
+                // NOTE: content comes from the AI service and may contain HTML. In production consider sanitizing this output before rendering.
+                dangerouslySetInnerHTML={{ __html: groqOutput || '<p>Press "Explain with AI" to send ranking and receive analysis.</p>' }}
+              />
+          </div>
         </div>
       )}
     </div>

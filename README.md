@@ -47,19 +47,45 @@ yarn dev
 
 If you want to build and run the C++ server locally, use the `CMakeLists.txt` in the `cpp` directory to build the binary. The application expects the server binary or service to be available (some builds may place artifacts under `build/graph_solver`). Check `cpp/CMakeLists.txt` for build details.
 
-Run with Docker
+Run with Docker (recommended: Docker Compose)
 ---
-This repository includes a `Dockerfile` for building a container image. Typical commands:
+This repository includes a `Dockerfile` and a `docker-compose.yml` to build and run the application. The compose setup makes it easy to supply runtime environment variables (such as `OPENAI_API_KEY`) via an `.env` file or your shell environment.
+
+Quick start (development / local):
+
+1. Copy the example env file and add your OpenAI/Groq API key (do NOT commit `.env`):
 
 ```bash
-# Build the image
-docker build -t cocoa-demo .
-
-# Run the container and publish port 3000
-docker run -p 3000:3000 cocoa-demo
+cp .env.example .env
+# edit .env and set OPENAI_API_KEY to your secret key
 ```
 
-Note about memory: running the container and the C++ graph analysis service can use around 8GB of RAM depending on the dataset and workload. If you encounter out-of-memory errors or the container is killed, increase Docker's available memory before running the container. On macOS with Docker Desktop, open Docker → Preferences → Resources → Memory and allocate at least 8 GB (12 GB recommended for large datasets). Also ensure your host has sufficient free RAM available.
+2. Build the image and run with Docker Compose:
+
+```bash
+# Build and run in attached mode (logs in terminal)
+docker compose up --build
+
+# Or run detached
+docker compose up --build -d
+```
+
+3. Open http://localhost:3000 in your browser.
+
+If you prefer to pass the API key from your shell instead of `.env`, you can do:
+
+```bash
+OPENAI_API_KEY="sk-..." docker compose up --build
+```
+
+Notes about memory: the container and C++ analysis service can use several GB of RAM depending on the dataset. If you encounter out-of-memory errors, increase Docker's memory allocation (on macOS: Docker → Preferences → Resources → Memory) and ensure your host has sufficient free RAM.
+
+If you still want to run the container manually without Compose, you can build and run it directly (less convenient for secrets):
+
+```bash
+docker build -t cocoa-demo .
+docker run -p 3000:3000 -e OPENAI_API_KEY="$OPENAI_API_KEY" cocoa-demo
+```
 
 API Endpoints (main)
 ---

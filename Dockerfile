@@ -18,6 +18,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 RUN npm install sqlite3 sqlite
+RUN npm install openai
 
 # 3. ソースコードコピー
 COPY . .

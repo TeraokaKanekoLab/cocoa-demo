@@ -1,0 +1,14 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cocoa-demo:latest
+    ports:
+      - "3000:3000"
+    # Read OPENAI_API_KEY from the environment or from .env file at runtime
+    env_file:
+      - .env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    restart: unless-stopped
