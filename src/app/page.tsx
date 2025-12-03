@@ -90,24 +90,33 @@ export default function Home() {
   
   // リストに追加
   const handleAddItem = async () => {
-    if (!inputName) return;
+    const normalizedName = inputName.trim();
+    if (!normalizedName) {
+      setError('Please enter a movie name');
+      return;
+    }
+
+    if (queryItems.some((item: QueryItem) => item.name === normalizedName)) {
+      setError(`"${normalizedName}" is already in the list`);
+      return;
+    }
 
     try {
       // Validate the name exists by querying the suggest API for exact match
-      const res = await fetch(`/api/suggest?q=${encodeURIComponent(inputName)}`);
+      const res = await fetch(`/api/suggest?q=${encodeURIComponent(normalizedName)}`);
       if (!res.ok) {
         setError('Name validation failed');
         return;
       }
       const data = await res.json();
       // suggest returns names matching the prefix; require exact match
-      const exists = Array.isArray(data) && data.includes(inputName);
+      const exists = Array.isArray(data) && data.includes(normalizedName);
       if (!exists) {
-        setError(`"${inputName}" not found in database`);
+        setError(`"${normalizedName}" not found in database`);
         return;
       }
 
-      setQueryItems([...queryItems, { name: inputName, weight: inputWeight }]);
+      setQueryItems([...queryItems, { name: normalizedName, weight: inputWeight }]);
       setInputName(''); // クリア
       setInputWeight(1.0); // リセット
       setError('');
@@ -324,6 +333,8 @@ export default function Home() {
     }
   };
 
+  const trimmedInputName = inputName.trim();
+  const isAddDisabled = !trimmedInputName || queryItems.some((item: QueryItem) => item.name === trimmedInputName);
   const selectedNames = new Set(queryItems.map((item: QueryItem) => item.name));
   const blacklistIdSet = new Set(blacklist.map((entry: BlacklistEntry) => entry.id));
   const visibleResults = results
@@ -373,7 +384,8 @@ export default function Home() {
 
           <button
             onClick={handleAddItem}
-            style={{ height: '40px', padding: '0 1.2rem', background: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            disabled={isAddDisabled}
+            style={{ height: '40px', padding: '0 1.2rem', background: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: isAddDisabled ? 'not-allowed' : 'pointer', opacity: isAddDisabled ? 0.6 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
             Add
           </button>
