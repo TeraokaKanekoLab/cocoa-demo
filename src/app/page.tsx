@@ -261,6 +261,7 @@ export default function Home() {
     try {
       const payload = {
         rankings: results.map((r) => ({ name: r.name ?? String(r.id), score: r.score })),
+        favoriteMovies: queryItems.map((q) => q.name),
       };
 
       const res = await fetch('/api/groq', {

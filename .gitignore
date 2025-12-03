@@ -3,3 +3,8 @@ build
 .env
 data/index_to_title.txt
 data/indexed_edges.txt
+node_modules
+.eslintrc.json
+next-env.d.ts
+.next
+package-lock.json
