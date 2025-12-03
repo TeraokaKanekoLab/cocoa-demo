@@ -37,7 +37,7 @@ int main (int argc, char *argv[]) {
     assert(graph.get_is_weighted());
     const int n = graph.node_size();
     const int walk_count = pow(10, 6);
-    const int k = 10;
+    const int k = 100;
     const double alpha = 0.2;
     
     vector<double> node_to_dc = graph.calc_degree_centrality();
@@ -49,6 +49,8 @@ int main (int argc, char *argv[]) {
 
     vector<pair<int, double>> ordered_dc = get_ordered_vector(node_to_l2_normalized_dc);
     movie.set_ordered_dc(ordered_dc);
+
+    map<int, double> movie_to_weight;
 
     cout << json{{"status", "ready"}}.dump() << endl;
 
@@ -66,7 +68,7 @@ int main (int argc, char *argv[]) {
 
             if (type == "analyze") {
                 vector<QueryItem> query_items = query_json.at("queries").get<vector<QueryItem>>();
-                map<int, double> movie_to_weight;
+                movie_to_weight.clear();
                 for (const QueryItem& item : query_items) {
                     movie_to_weight.emplace(item.id, item.weight);
                 }
@@ -103,6 +105,9 @@ int main (int argc, char *argv[]) {
                 CorrelationAdjuster adjuster(ppr_map, node_to_l2_normalized_dc);
                 map<int, double> decreased_ppr;
                 double c = adjuster.calc_influence_decreased_ppr(cosine_similarity, decreased_ppr);
+                for (const auto&[movie_id, weight] : movie_to_weight) {
+                    decreased_ppr.erase(movie_id);
+                }
                 // c : 次数中心性を射影して定数倍して加減算する際の定数
 
                 const auto ordered_ppr = get_ordered_map(decreased_ppr);

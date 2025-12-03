@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // 型定義
 type QueryItem = { name: string; weight: number };
 type ResultItem = { id: number; score: number; name?: string };
+type BlacklistEntry = { id: number; name?: string };
 
 export default function Home() {
   // --- State管理 ---
@@ -41,6 +42,7 @@ export default function Home() {
   const [groqLoading, setGroqLoading] = useState(false);
   const [groqError, setGroqError] = useState('');
   const [groqOutput, setGroqOutput] = useState('');
+  const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
 
   // --- サジェスト機能 ---
   useEffect(() => {
@@ -122,6 +124,30 @@ export default function Home() {
     setQueryItems(newItems);
   };
 
+  const handleResultSelection = (res: ResultItem) => {
+    if (!res.name) return;
+    setQueryItems((prev: QueryItem[]) => {
+      if (prev.some((item: QueryItem) => item.name === res.name)) {
+        return prev;
+      }
+      return [...prev, { name: res.name as string, weight: 1 }];
+    });
+  };
+
+  const handleBlacklistAdd = (res: ResultItem) => {
+    if (typeof res.id !== 'number') return;
+    setBlacklist((prev: BlacklistEntry[]) => {
+      if (prev.some((entry) => entry.id === res.id)) {
+        return prev;
+      }
+      return [...prev, { id: res.id, name: res.name }];
+    });
+  };
+
+  const handleBlacklistRemove = (id: number) => {
+    setBlacklist((prev: BlacklistEntry[]) => prev.filter((entry: BlacklistEntry) => entry.id !== id));
+  };
+
   // Stage 1: 解析実行
   const handleAnalyze = async () => {
     if (queryItems.length === 0) return;
@@ -130,6 +156,7 @@ export default function Home() {
     setCParam(0.0);
     setGroqOutput('');
     setGroqError('');
+    const blacklistIds = Array.from(new Set(blacklist.map((entry: BlacklistEntry) => entry.id)));
 
     try {
       // タイムアウト付き（30秒）のfetch
@@ -140,7 +167,7 @@ export default function Home() {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: queryItems }),
+        body: JSON.stringify({ items: queryItems, blacklistIds }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -253,14 +280,14 @@ export default function Home() {
 
   // --- Groq Explain: send ranking + names/scores to /api/groq ---
   const handleGroqExplain = async () => {
-    if (results.length === 0) return;
+    if (visibleResults.length === 0) return;
     setGroqLoading(true);
     setGroqError('');
     setGroqOutput('');
 
     try {
       const payload = {
-        rankings: results.map((r) => ({ name: r.name ?? String(r.id), score: r.score })),
+        rankings: visibleResults.map((r) => ({ name: r.name ?? String(r.id), score: r.score })),
         favoriteMovies: queryItems.map((q) => q.name),
       };
 
@@ -297,6 +324,13 @@ export default function Home() {
     }
   };
 
+  const selectedNames = new Set(queryItems.map((item: QueryItem) => item.name));
+  const blacklistIdSet = new Set(blacklist.map((entry: BlacklistEntry) => entry.id));
+  const visibleResults = results
+    .filter((res: ResultItem) => !blacklistIdSet.has(res.id))
+    .filter((res: ResultItem) => !res.name || !selectedNames.has(res.name))
+    .slice(0, 10);
+
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
       <h1 style={{ borderBottom: '2px solid #333', paddingBottom: '0.5rem' }}>Graph Analysis Demo</h1>
@@ -319,7 +353,7 @@ export default function Home() {
               style={{ width: '100%', padding: '0.5rem', fontSize: '1rem', height: '40px', boxSizing: 'border-box' }}
             />
             <datalist id="suggestions-list">
-              {suggestions.map((s) => (
+              {suggestions.map((s: string) => (
                 <option key={s} value={s} />
               ))}
             </datalist>
@@ -349,7 +383,7 @@ export default function Home() {
         {queryItems.length > 0 && (
           <div style={{ marginTop: '1rem', background: '#f5f5f5', padding: '1rem', borderRadius: '4px' }}>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {queryItems.map((item, idx) => (
+              {queryItems.map((item: QueryItem, idx: number) => (
                 <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ddd', padding: '0.5rem 0' }}>
                   <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <b>{item.name}</b>
@@ -357,7 +391,7 @@ export default function Home() {
                       <label style={{ fontSize: '0.85rem', color: '#444' }}>Weight</label>
                       <input
                         type="number"
-                        step="0.1"
+                        step="1"
                         value={Number.isFinite(item.weight) ? item.weight : 0}
                         onChange={(e) => {
                           const v = parseFloat(e.target.value);
@@ -445,35 +479,24 @@ export default function Home() {
           </div>
 
           {/* 結果リスト */}
-          <h3>Top Nodes</h3>
+          <h3>Top Movies</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#f0f0f0', textAlign: 'left' }}>
                 <th style={{ padding: '0.5rem' }}>Rank</th>
                 <th style={{ padding: '0.5rem' }}>Node ID</th>
-                <th style={{ padding: '0.5rem' }}>Score</th>
+                <th style={{ padding: '0.5rem', textAlign: 'left', whiteSpace: 'nowrap' }}>Score</th>
+                <th style={{ padding: '0.5rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {results.map((res, idx) => (
+              {visibleResults.map((res: ResultItem, idx: number) => (
                 <tr key={res.id} style={{ borderBottom: '1px solid #eee' }}>
                   <td style={{ padding: '0.5rem' }}>{idx + 1}</td>
                   <td style={{ padding: '0.5rem' }}>
                     {res.name ? (
                       <button
-                        onClick={() => {
-                          const name = res.name ?? '';
-                          if (!name) return;
-                          setQueryItems((prev) => {
-                            const exists = prev.some((p) => p.name === name);
-                            if (exists) {
-                              // already selected: do nothing
-                              return prev;
-                            }
-                            // add new item with weight 1
-                            return [...prev, { name, weight: 1 }];
-                          });
-                        }}
+                        onClick={() => handleResultSelection(res)}
                         style={{
                           background: 'none',
                           border: 'none',
@@ -489,13 +512,60 @@ export default function Home() {
                       res.id
                     )}
                   </td>
-                  <td style={{ padding: '0.5rem', color: '#0070f3', fontWeight: 'bold' }}>
+                  <td style={{ padding: '0.5rem', color: '#0070f3', fontWeight: 'bold', textAlign: 'left', whiteSpace: 'nowrap' }}>
                     {Number.isFinite(res.score) ? res.score.toFixed(4) : '—'}
+                  </td>
+                  <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                    <button
+                      onClick={() => handleBlacklistAdd(res)}
+                      style={{
+                        padding: 0,
+                        background: 'none',
+                        border: 'none',
+                        color: '#cc3a3a',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        textDecoration: 'underline',
+                        minWidth: '80px',
+                        textAlign: 'center',
+                      }}
+                      title="Hide this movie from future results"
+                    >
+                      Exclude
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {blacklist.length > 0 && (
+            <div style={{ marginTop: '1rem', background: '#fff5f5', padding: '1rem', borderRadius: '6px' }}>
+              <h4 style={{ marginBottom: '0.5rem' }}>Excluded Movies</h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {blacklist.map((entry: BlacklistEntry) => (
+                  <li key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0', borderBottom: '1px solid #f0caca' }}>
+                    <span>
+                      {entry.name ?? 'Unknown Movie'}
+                    </span>
+                    <button
+                      onClick={() => handleBlacklistRemove(entry.id)}
+                      style={{
+                        border: 'none',
+                        background: 'none',
+                        color: '#d9534f',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                        lineHeight: 1,
+                      }}
+                      title="Allow this movie to appear again"
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {/* Groq explain button and panel */}
           <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div />

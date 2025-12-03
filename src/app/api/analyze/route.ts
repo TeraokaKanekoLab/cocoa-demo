@@ -2,6 +2,37 @@ import { NextResponse } from 'next/server';
 import GraphRunner from '@/lib/graphRunner';
 import { getDb } from '@/lib/db';
 
+const TOP_RESULT_LIMIT = 100;
+
+async function respondWithTopNodes(rawResult: unknown) {
+  if (!Array.isArray(rawResult)) {
+    return null;
+  }
+
+  const limitedResult = rawResult.slice(0, TOP_RESULT_LIMIT);
+  if (limitedResult.length === 0) {
+    return NextResponse.json({ status: 'ok', top_nodes: [] });
+  }
+
+  const db = await getDb();
+  const ids = limitedResult.map((r: any) => r.id);
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = await db.all(
+    `SELECT id, name FROM nodes WHERE id IN (${placeholders})`,
+    ids
+  );
+  const idToName = new Map<number, string>();
+  rows.forEach((r: any) => idToName.set(r.id, r.name));
+
+  const top_nodes = limitedResult.map((r: any) => ({
+    id: r.id,
+    name: idToName.get(r.id) ?? String(r.id),
+    score: r.score,
+  }));
+
+  return NextResponse.json({ status: 'ok', top_nodes });
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -21,27 +52,9 @@ export async function POST(req: Request) {
         type: "adjust",
         c: cValue
       });
-      // adjust でも C++ は配列を返す（正常時）。配列ならID->name 変換して返す
-      const db = await getDb();
-      if (Array.isArray(result)) {
-        const ids = result.map((r: any) => r.id);
-        if (ids.length > 0) {
-          const placeholders2 = ids.map(() => '?').join(',');
-          const rows2 = await db.all(
-            `SELECT id, name FROM nodes WHERE id IN (${placeholders2})`,
-            ids
-          );
-          const idToName = new Map<number, string>();
-          rows2.forEach((r: any) => idToName.set(r.id, r.name));
-
-          const top_nodes = result.map((r: any) => ({
-            id: r.id,
-            name: idToName.get(r.id) ?? String(r.id),
-            score: r.score,
-          }));
-
-          return NextResponse.json({ status: 'ok', top_nodes });
-        }
+      const normalizedResponse = await respondWithTopNodes(result);
+      if (normalizedResponse) {
+        return normalizedResponse;
       }
 
       return NextResponse.json(result);
@@ -52,6 +65,15 @@ export async function POST(req: Request) {
     // ------------------------------------------
     else if (Array.isArray(body.items) && body.items.length > 0) {
       const { items } = body; // [{name: "A", weight: 1.0}, ...]
+      const blacklistIds: number[] = Array.isArray(body.blacklistIds)
+        ? Array.from(
+            new Set(
+              body.blacklistIds
+                .map((value: unknown) => (typeof value === 'number' ? value : Number(value)))
+                .filter((value: number) => Number.isInteger(value))
+            )
+          )
+        : [];
       
       const db = await getDb();
       const nodeNames = items.map((i: any) => i.name);
@@ -78,6 +100,10 @@ export async function POST(req: Request) {
         }
       }
 
+      for (const id of blacklistIds) {
+        queryList.push({ id, w: 0 });
+      }
+
       if (queryList.length === 0) {
         return NextResponse.json({ error: 'Valid nodes not found' }, { status: 404 });
       }
@@ -86,26 +112,9 @@ export async function POST(req: Request) {
         type: "analyze",
         queries: queryList
       });
-      // 結果が配列 (C++ の実装は成功時に配列を返す)
-      if (Array.isArray(result)) {
-        const ids = result.map((r: any) => r.id);
-        if (ids.length > 0) {
-          const placeholders2 = ids.map(() => '?').join(',');
-          const rows2 = await db.all(
-            `SELECT id, name FROM nodes WHERE id IN (${placeholders2})`,
-            ids
-          );
-          const idToName = new Map<number, string>();
-          rows2.forEach((r: any) => idToName.set(r.id, r.name));
-
-          const top_nodes = result.map((r: any) => ({
-            id: r.id,
-            name: idToName.get(r.id) ?? String(r.id),
-            score: r.score,
-          }));
-
-          return NextResponse.json({ status: 'ok', top_nodes });
-        }
+      const normalizedResponse = await respondWithTopNodes(result);
+      if (normalizedResponse) {
+        return normalizedResponse;
       }
 
       return NextResponse.json(result);
