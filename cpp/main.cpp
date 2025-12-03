@@ -88,10 +88,14 @@ int main (int argc, char *argv[]) {
                 const auto ordered_ppr = get_ordered_map(decreased_ppr);
                 json result_json;
                 vector<ResultItem> results;
-                for (int i = 0; i < min(k, (int)ordered_ppr.size()); i++) {
-                    int node_id = ordered_ppr.at(i).first;
-                    double score = ordered_ppr.at(i).second;
-                    results.push_back(ResultItem{node_id, score});
+                int cnt = 0;
+                while (results.size() < k && cnt < (int)ordered_ppr.size()) {
+                    int node_id = ordered_ppr.at(cnt).first;
+                    double score = ordered_ppr.at(cnt).second;
+                    cnt++;
+                    if (movie.is_movie(node_id)) {
+                        results.push_back(ResultItem{node_id, score});
+                    }       
                 }
                 result_json = results;
                 cout << result_json.dump() << endl;
@@ -113,10 +117,14 @@ int main (int argc, char *argv[]) {
                 const auto ordered_ppr = get_ordered_map(decreased_ppr);
                 json result_json;
                 vector<ResultItem> results;
-                for (int i = 0; i < min(k, (int)ordered_ppr.size()); i++) {
-                    int node_id = ordered_ppr.at(i).first;
-                    double score = ordered_ppr.at(i).second;
-                    results.push_back(ResultItem{node_id, score});
+                int cnt = 0;
+                while (results.size() < k && cnt < (int)ordered_ppr.size()) {
+                    int node_id = ordered_ppr.at(cnt).first;
+                    double score = ordered_ppr.at(cnt).second;
+                    cnt++;
+                    if (movie.is_movie(node_id)) {
+                        results.push_back(ResultItem{node_id, score});
+                    }
                 }
                 result_json = results;
                 cout << result_json.dump() << endl;
