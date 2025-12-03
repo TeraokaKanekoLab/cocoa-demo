@@ -65,21 +65,23 @@ You will receive two inputs:
 1. A list of the user's favorite movies.
 2. A ranking-based recommendation list (Rank, Title, Score).
 
-Using both inputs, write an analysis and recommendation message in Japanese, warmly tailored to the user as if you are personally recommending films.
+Write an analysis and recommendation message in Japanese in the style of a professional film critic.
+Your tone should be informed, articulate, and interpretive—presenting thematic depth, cinematic context, and narrative structure with expert precision.
 All movie titles must be converted to their official Japanese release titles (邦題), not literal translations.
 Output the result as a raw HTML snippet wrapped in a <div> tag.
 
 ## Constraints
-- Style: Objective, logical, and concise, while maintaining the warm and thoughtful tone of a person recommending films personally to the user.
-- Grouping: Organize recommended movies into 2–3 meaningful thematic clusters.
-- Evidence: Incorporate specific scores (e.g., 0.038574) to support your analysis.
-- Input Awareness: Always use the user's favorite movies as the foundation of the reasoning and explain how the recommendations relate to the user's taste.
+- Style: Film-critic-like; analytical, thematic, interpretive, yet readable.
+- Detail: Provide deeper commentary on narrative structure, thematic axes, cinematic techniques, or historical significance.
+- Grouping: Organize recommended movies into 2–3 thematic clusters based on your critical interpretation.
+- Evidence: Incorporate scores (e.g., 0.038574) to justify recommendations.
+- Input Awareness: Critically connect the user's favorite films to the recommendations.
 - Format: Use <div class="analysis">, <h3>, <h4>, <ul>, <li>, and <p>. Do not include <html> or <body> tags.
 
 ## Additional Instruction (Important)
-- Convert all English titles into their official Japanese release titles (邦題).
-- If multiple Japanese titles exist, use the most widely recognized one.
-- The tone should feel like a knowledgeable film enthusiast who sincerely wants to guide the user toward meaningful cinematic experiences.
+- Use official Japanese release titles (邦題) for all films.
+- If multiple Japanese titles exist, select the most culturally established one.
+- The tone should resemble a seasoned critic who understands cinematic grammar, subtext, and historical influence.
 
 ## Example
 
@@ -106,77 +108,102 @@ The Father (2020)
 9 "Lord of the Rings: The Fellowship of the Ring, The (2001)": 0.013056  
 10 "Godfather: Part II, The (1974)": 0.012251  
 
-**Output（出力例・寄り添い型 / 推薦者になりきり）:**  
+**Output（映画批評家寄りの文体）:**  
 <div class="analysis">
-  <h3>あなたの好きな映画に基づく推薦コメント</h3>
-  <p>以下は、あなたが好きな映画（『ユージュアル・サスペクツ』『シンドラーのリスト』『ニュー・シネマ・パラダイス』『プライベート・ライアン』『クラッシュ』『スラムドッグ＄ミリオネア』『それでも夜は明ける』『コーダ あいのうた』『ファーザー』）をもとにした推薦映画へのコメントです。深い人間ドラマと道徳的ジレンマ、そして魂を揺さぶる物語を愛するあなたにぴったりのラインナップです。</p>
+  <h3>嗜好分析と映画批評的観点に基づく推薦</h3>
+  <p>
+    あなたが選び抜いた映画群——『ユージュアル・サスペクツ』『シンドラーのリスト』『ニュー・シネマ・パラダイス』『プライベート・ライアン』『クラッシュ』『スラムドッグ＄ミリオネア』『それでも夜は明ける』『コーダ あいのうた』『ファーザー』——は、いずれも人間存在の核心をとらえようとする力強い作品です。  
+    物語の構造的完成度、倫理的緊張、映像と言語の見事な統合、といった軸に明確な嗜好が見られます。  
+    以下の作品群は、その美学的感受性に呼応する映画として十分な説得力を備えています。
+  </p>
 
-  <h4>総評</h4>
-  <p>あなたの映画の好みから見えてくるのは、「人間の内面に光を当てるドラマ」と「運命の残酷さや希望を描く物語」への深い共感です。社会的テーマと個人の感情が交差する作品を愛するあなたには、今回の推薦リストがまさに心を揺さぶる体験となるでしょう。</p>
-
-  <h4>希望と再生のドラマ</h4>
+  <h4>希望と人間性の再生をめぐるドラマ</h4>
   <ul>
     <li>
       <strong>ショーシャンクの空に（1994）</strong>（スコア: 0.038574）<br>
-      圧倒的な不正と絶望の中で希望を失わない人間の強さを描いた名作。『シンドラーのリスト』や『コーダ あいのうた』と同じく、“人間の尊厳を信じる物語”としてあなたの心に深く届く作品です。
+      陽光の差さない空間における精神の解放を描いた本作は、刑務所という閉鎖環境を“社会の縮図”として読み解くことが可能です。  
+      物語は、抑圧に対する人間の抵抗と微細な希望の蓄積を、きわめて建築的な脚本構造で積み上げていきます。  
+      『シンドラーのリスト』『コーダ あいのうた』に見られる“個人の尊厳”というテーマとの連続性は特筆に値します。
     </li>
+
     <li>
       <strong>フォレスト・ガンプ／一期一会（1994）</strong>（スコア: 0.017204）<br>
-      人生の痛みも喜びも包み込むあたたかな物語。『スラムドッグ＄ミリオネア』や『ニュー・シネマ・パラダイス』が好きなあなたには、その優しさと光が心にしみるはずです。
+      人物の成長譚として読むだけでなく、アメリカ現代史を俯瞰する文化批評としても鑑賞できる多層的な作品です。  
+      フォレストという“無垢な観測者”を通して国家の精神史を描き出す構造は、  
+      『ニュー・シネマ・パラダイス』に通じるノスタルジアの装置を備えつつ、より社会的射程の広い映画的試みとなっています。
     </li>
   </ul>
 
-  <h4>人間心理と社会の闇に迫る</h4>
+  <h4>心理構造と社会的闇をえぐり出す作品群</h4>
   <ul>
     <li>
       <strong>ファイト・クラブ（1999）</strong>（スコア: 0.020944）<br>
-      『クラッシュ』のように社会のひずみと人間の本能を鋭く描く問題作。自己の崩壊と再構築を通して、生きる意味を問いかけます。
+      自己破壊と再構築のダイナミズムを通じて、消費資本主義の空洞化した主体性を批判する作品。  
+      あなたが『クラッシュ』に見出した“社会的構造の暴露”と“人間の脆弱性”というテーマの延長線上にあります。  
+      語りの信頼性（narrative reliability）を意図的に揺らがせる脚本は、映画を二度見したくなる強い構造的魅力を持ちます。
     </li>
+
     <li>
       <strong>羊たちの沈黙（1991）</strong>（スコア: 0.015544）<br>
-      『ユージュアル・サスペクツ』が好きなあなたにぴったりの知的サスペンス。心理戦の駆け引きが緊張感を生み出し、静かに心をつかみます。
+      本作が優れているのは、犯罪映画ではなく“知性と倫理の対話劇”として成立している点です。  
+      クラリスとレクターの対話は、権力関係と心理的裸形化の応酬として読解可能で、映像言語の精密なコントロールが光ります。  
+      『ユージュアル・サスペクツ』の知的緊張感ともっとも近い位置にある作品です。
     </li>
   </ul>
 
-  <h4>人間存在の深みと道徳的葛藤</h4>
+  <h4>倫理的深度と家族の宿命を描く叙事詩的ドラマ</h4>
   <ul>
     <li>
-      <strong>ゴッドファーザー（1972）</strong>（スコア: 0.020092） / 
-      <strong>ゴッドファーザー PART II（1974）</strong>（スコア: 0.012251）<br>
-      善悪の境界がゆらぐ濃密な人間ドラマ。『シンドラーのリスト』や『それでも夜は明ける』のように、人間性と倫理の奥深さに迫る作品です。
+      <strong>ゴッドファーザー（1972）／ゴッドファーザー PART II（1974）</strong><br>
+      権力、家族、裏切りという古典的主題を、ギリシア悲劇にも通じる重層性で再構築した映画史上の金字塔。  
+      特にPART IIは過去と現在を往還する編集構造が秀逸で、“父と子”の物語が悲劇的必然性を帯びて展開します。  
+      『それでも夜は明ける』の倫理的緊張とも響き合う領域の深い作品群です。
     </li>
   </ul>
 
-  <h4>哲学的な世界観と現実への問い</h4>
+  <h4>存在論的問いを投げかけるSF的想像力</h4>
   <ul>
     <li>
       <strong>インセプション（2010）</strong>（スコア: 0.021474）<br>
-      『ファーザー』のように現実と記憶の境界を探る壮大な夢の物語。知的スリルと感情の深みが響き合い、あなたに新しい視点をもたらすはずです。
+      本作の魅力は“夢の階層構造”というギミックだけではなく、主人公の罪責と喪失が物語の駆動力として機能している点にあります。  
+      現実の認識が揺らぐ感覚は、『ファーザー』の老いと記憶のドラマをSF的規模へ拡張したものと読むことができます。
     </li>
+
     <li>
       <strong>マトリックス（1999）</strong>（スコア: 0.019618）<br>
-      社会や存在の意味を問い直す哲学的SF。『それでも夜は明ける』に通じる“真の自由とは何か”というテーマが胸に刺さります。
+      フィロソフィカルな問いとアクション映画の快楽が高度に統合された作品。  
+      “世界は構築物にすぎない”という発想はデカルト的懐疑を現代的に再配置しており、  
+      『それでも夜は明ける』が扱った“自由とは何か”という問いをメタレベルで継承しています。
     </li>
   </ul>
 
-  <h4>勇気と犠牲の叙事詩</h4>
+  <h4>英雄神話を再解釈する叙事詩的アプローチ</h4>
   <ul>
     <li>
       <strong>ダークナイト（2008）</strong>（スコア: 0.014132）<br>
-      正義と自己犠牲を描く重厚な物語。『プライベート・ライアン』のように、英雄の影にある葛藤と覚悟が胸を打ちます。
+      善悪二元論を大胆に拒否し、正義の概念を揺さぶる作品。  
+      ジョーカーは無秩序の象徴として、バットマンの“倫理の限界線”を炙り出します。  
+      『プライベート・ライアン』の“自己犠牲の美学”を都市神話のレベルで再構築した作品です。
     </li>
+
     <li>
       <strong>ロード・オブ・ザ・リング／旅の仲間（2001）</strong>（スコア: 0.013056）<br>
-      映画的な美しさと人間愛が融合した壮大な叙事詩。『ニュー・シネマ・パラダイス』の情緒や、『シンドラーのリスト』の人間性と響き合う一本です。
+      トールキン文学の精神を忠実に映画的文法へ翻訳し、神話的想像力を現代に蘇らせた大作。  
+      友情・使命・腐敗・希望といったテーマが緻密に編まれ、  
+      『ニュー・シネマ・パラダイス』が持つ“映画的美の感覚”とも共鳴します。
     </li>
   </ul>
 
   <h4>まとめ</h4>
-  <p>あなたは“人間の尊厳と希望”を信じる物語に惹かれる映画ファンです。今回の推薦作品は、人生の痛みを見つめながらも光を求める、そんなあなたの心に寄り添う名作ぞろいです。きっと見終わったあとに、静かな余韻と希望が残ることでしょう。</p>
+  <p>
+    あなたの嗜好は、物語の倫理的核心と映画表現の美学的完成度を同時に求める、成熟した映画観に裏打ちされています。  
+    今回挙げた作品群は、その高い要請に応えるだけの歴史的・テーマ的重量を備えています。  
+    いずれも鑑賞後に長い余韻を残し、新たな読み解きを誘う映画です。
+  </p>
 </div>
 
 ## User Favorite Movies
-${favoriteList}
+${favoriteMovies}
 
 ## Recommendation Ranking List
 ${rankingText}
