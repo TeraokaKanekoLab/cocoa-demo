@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 // 型定義
 type QueryItem = { name: string; weight: number };
-type ResultItem = { id: number; score: number; name?: string };
+type ResultItem = { id: number; score: number; name?: string; ranking?: number | null };
 type BlacklistEntry = { id: number; name?: string };
 
 export default function Home() {
@@ -335,6 +335,14 @@ export default function Home() {
 
   const trimmedInputName = inputName.trim();
   const isAddDisabled = !trimmedInputName || queryItems.some((item: QueryItem) => item.name === trimmedInputName);
+  const addButtonClass = [
+    'h-10 rounded-lg px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60',
+    isAddDisabled ? 'bg-sky-400' : 'bg-sky-600 hover:bg-sky-700',
+  ].join(' ');
+  const runAnalysisButtonClass = [
+    'rounded-lg px-6 py-2 text-white transition disabled:cursor-not-allowed disabled:opacity-70',
+    !serverReady ? 'bg-slate-400' : loading ? 'bg-lime-600' : 'bg-emerald-500 hover:bg-emerald-600',
+  ].join(' ');
   const selectedNames = new Set(queryItems.map((item: QueryItem) => item.name));
   const blacklistIdSet = new Set(blacklist.map((entry: BlacklistEntry) => entry.id));
   const visibleResults = results
@@ -343,25 +351,25 @@ export default function Home() {
     .slice(0, 10);
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1 style={{ borderBottom: '2px solid #333', paddingBottom: '0.5rem' }}>Graph Analysis Demo</h1>
+    <div className="mx-auto max-w-4xl p-8 font-sans">
+      <h1 className="border-b-2 border-slate-800 pb-3 text-3xl font-semibold">Graph Analysis Demo</h1>
 
       {/* --- 入力エリア --- */}
-      <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-        <h3>1. Query Builder</h3>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '1rem' }}>
-          
+      <div className="mt-8 rounded-xl bg-white p-6 shadow">
+        <h3 className="text-xl font-semibold">1. Query Builder</h3>
+        <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end">
           {/* ノード名入力 (サジェスト付き) */}
-          <div style={{ flex: 2 }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Movie Name</label>
+          <div className="flex-1">
+            <label className="mb-2 block text-sm font-semibold uppercase tracking-wide text-slate-600">Movie Name</label>
+            {/* datalistと連携 */}
             <input
               type="text"
-              list="suggestions-list" // datalistと連携
+              list="suggestions-list"
               ref={nameInputRef}
               value={inputName}
               onChange={(e) => setInputName(e.target.value)}
               placeholder="Type movie name (e.g. Matrix)..."
-              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem', height: '40px', boxSizing: 'border-box' }}
+              className="h-10 w-full rounded-lg border border-slate-300 px-3 text-base shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
             />
             <datalist id="suggestions-list">
               {suggestions.map((s: string) => (
@@ -371,21 +379,21 @@ export default function Home() {
           </div>
 
           {/* 重み入力 */}
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Weight</label>
+          <div className="w-full md:w-40">
+            <label className="mb-2 block text-sm font-semibold uppercase tracking-wide text-slate-600">Weight</label>
             <input
               type="number"
-              step="0.1"
+              step="1"
               value={inputWeight}
               onChange={(e) => setInputWeight(parseFloat(e.target.value))}
-              style={{ width: '100%', padding: '0.5rem', fontSize: '1rem', height: '40px', boxSizing: 'border-box' }}
+              className="h-10 w-full rounded-lg border border-slate-300 px-3 text-base shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
             />
           </div>
 
           <button
             onClick={handleAddItem}
             disabled={isAddDisabled}
-            style={{ height: '40px', padding: '0 1.2rem', background: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: isAddDisabled ? 'not-allowed' : 'pointer', opacity: isAddDisabled ? 0.6 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            className={addButtonClass}
           >
             Add
           </button>
@@ -393,14 +401,14 @@ export default function Home() {
 
         {/* 選択済みリスト */}
         {queryItems.length > 0 && (
-          <div style={{ marginTop: '1rem', background: '#f5f5f5', padding: '1rem', borderRadius: '4px' }}>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          <div className="mt-6 rounded-lg bg-slate-100 p-4">
+            <ul className="divide-y divide-slate-200">
               {queryItems.map((item: QueryItem, idx: number) => (
-                <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ddd', padding: '0.5rem 0' }}>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <b>{item.name}</b>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <label style={{ fontSize: '0.85rem', color: '#444' }}>Weight</label>
+                <li key={idx} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <b className="text-slate-800">{item.name}</b>
+                    <label className="flex items-center gap-2 text-sm text-slate-600">
+                      Weight
                       <input
                         type="number"
                         step="1"
@@ -413,37 +421,26 @@ export default function Home() {
                         }}
                         disabled={loading}
                         title={loading ? 'Cannot change weight while analysis is running' : undefined}
-                        style={{ width: '80px', padding: '0.25rem', fontSize: '0.95rem' }}
+                        className="w-20 rounded border border-slate-300 px-2 py-1 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:bg-slate-200"
                       />
-                    </div>
+                    </label>
                   </div>
-                  <button onClick={() => handleRemoveItem(idx)} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer' }}>✕</button>
+                  <button
+                    onClick={() => handleRemoveItem(idx)}
+                    className="self-start text-lg text-rose-500 transition hover:text-rose-600 sm:self-auto"
+                  >
+                    ✕
+                  </button>
                 </li>
               ))}
             </ul>
-            <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+            <div className="mt-4 flex justify-end">
               <button
                 onClick={handleAnalyze}
-                // ローディング中、またはサーバー準備未完了なら無効化
-                disabled={loading || !serverReady} 
-                style={{ 
-                  padding: '0.8rem 2rem', 
-                  // 色を変えて無効状態をわかりやすくする
-                  background: !serverReady ? '#ccc' : (loading ? '#88cf88' : '#28a745'), 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '4px', 
-                  fontSize: '1rem', 
-                  cursor: (loading || !serverReady) ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.3s'
-                }}
+                disabled={loading || !serverReady}
+                className={runAnalysisButtonClass}
               >
-                {!serverReady 
-                  ? 'Loading Graph...'   // 準備中
-                  : loading 
-                    ? 'Analyzing...'     // 解析中
-                    : 'Run Analysis'     // 実行可能
-                }
+                {!serverReady ? 'Loading Graph...' : loading ? 'Analyzing...' : 'Run Analysis'}
               </button>
             </div>
           </div>
@@ -451,22 +448,25 @@ export default function Home() {
       </div>
 
       {/* エラー表示 */}
-      {error && <div style={{ color: 'red', marginTop: '1rem', padding: '1rem', background: '#ffe6e6' }}>Error: {error}</div>}
+      {error && (
+        <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700">
+          Error: {error}
+        </div>
+      )}
 
       {/* --- 結果 & 調整エリア --- */}
       {results.length > 0 && !loading && (
-        <div style={{ marginTop: '2rem', background: '#fff', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-          
+        <div className="mt-8 rounded-xl bg-white p-6 shadow">
           {/* Stage 2: パラメータ調整 */}
-          <div style={{ marginBottom: '2rem', padding: '1rem', background: '#eef', borderRadius: '4px' }}>
-            <h3>2. Post-Process Adjustment</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <span style={{ fontWeight: 'bold' }}>
+          <div className="rounded-lg bg-indigo-50 p-4">
+            <h3 className="text-lg font-semibold text-indigo-900">2. Post-Process Adjustment</h3>
+            <div className="mt-3 flex flex-col gap-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <span className="font-semibold text-indigo-900">
                   Parameter: {Number.isFinite(cParam) ? cParam.toFixed(2) : '—'}
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
-                  <span style={{ fontSize: '0.9rem', color: '#444', whiteSpace: 'nowrap' }}>Minor (−1)</span>
+                <div className="flex flex-1 items-center gap-3">
+                  <span className="text-sm text-slate-600">Minor (−1)</span>
                   <input
                     type="range"
                     min="-1"
@@ -474,101 +474,84 @@ export default function Home() {
                     step="0.01"
                     value={cParam}
                     onChange={(e) => handleAdjust(parseFloat(e.target.value))}
-                    style={{ flex: 1 }}
+                    className="flex-1 accent-indigo-600"
                   />
-                  <span style={{ fontSize: '0.9rem', color: '#444', whiteSpace: 'nowrap' }}>Major (+1)</span>
+                  <span className="text-sm text-slate-600">Major (+1)</span>
                 </div>
               </div>
 
-              <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.25rem' }}>
-                Move the slider to emphasize different content types after analysis. Values near <b>+1</b> highlight more <b>major</b> or central content; values near <b>−1</b> highlight more <b>minor</b> or peripheral content.
+              <p className="text-sm text-slate-600">
+                Move the slider to emphasize different content types after analysis. Values near <b>+1</b> highlight more <b>major</b> content; values near <b>−1</b> surface more <b>minor</b> nodes.
               </p>
-
-              <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.25rem' }}>
-                Tip: drag to the right (towards <b>Major</b>) to surface prominent nodes, or to the left (towards <b>Minor</b>) to surface less prominent ones.
+              <p className="text-sm text-slate-600">
+                Tip: drag towards <b>Major</b> to surface prominent nodes, or towards <b>Minor</b> to explore peripheral ones.
               </p>
             </div>
           </div>
 
           {/* 結果リスト */}
-          <h3>Top Movies</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#f0f0f0', textAlign: 'left' }}>
-                <th style={{ padding: '0.5rem' }}>Rank</th>
-                <th style={{ padding: '0.5rem' }}>Node ID</th>
-                <th style={{ padding: '0.5rem', textAlign: 'left', whiteSpace: 'nowrap' }}>Score</th>
-                <th style={{ padding: '0.5rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleResults.map((res: ResultItem, idx: number) => (
-                <tr key={res.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '0.5rem' }}>{idx + 1}</td>
-                  <td style={{ padding: '0.5rem' }}>
-                    {res.name ? (
-                      <button
-                        onClick={() => handleResultSelection(res)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: 0,
-                          fontSize: '1rem',
-                          textDecoration: 'underline'
-                        }}
-                      >
-                        {res.name}
-                      </button>
-                    ) : (
-                      res.id
-                    )}
-                  </td>
-                  <td style={{ padding: '0.5rem', color: '#0070f3', fontWeight: 'bold', textAlign: 'left', whiteSpace: 'nowrap' }}>
-                    {Number.isFinite(res.score) ? res.score.toFixed(4) : '—'}
-                  </td>
-                  <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                    <button
-                      onClick={() => handleBlacklistAdd(res)}
-                      style={{
-                        padding: 0,
-                        background: 'none',
-                        border: 'none',
-                        color: '#cc3a3a',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        textDecoration: 'underline',
-                        minWidth: '80px',
-                        textAlign: 'center',
-                      }}
-                      title="Hide this movie from future results"
-                    >
-                      Exclude
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="mt-6">
+            <h3 className="text-xl font-semibold">Top Movies</h3>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    <th className="px-3 py-2">Rank</th>
+                    <th className="px-3 py-2">Name</th>
+                    <th className="px-3 py-2">Score</th>
+                    <th className="px-3 py-2 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleResults.map((res: ResultItem, idx: number) => (
+                    <tr key={res.id} className="border-b border-slate-100">
+                      <td className="px-3 py-3 text-sm font-semibold text-slate-700">{idx + 1}</td>
+                      <td className="px-3 py-3">
+                        {res.name ? (
+                          <div className="flex flex-col items-start">
+                            <button
+                              onClick={() => handleResultSelection(res)}
+                              className="text-left text-base font-semibold text-sky-600 transition hover:text-sky-700"
+                            >
+                              {res.name}
+                            </button>
+                            {typeof res.ranking === 'number' ? (
+                              <span className="text-xs text-slate-500">#{res.ranking}</span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          res.id
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-base font-semibold text-sky-700">
+                        {Number.isFinite(res.score) ? res.score.toFixed(4) : '—'}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <button
+                          onClick={() => handleBlacklistAdd(res)}
+                          className="text-sm font-semibold text-rose-600 underline-offset-2 transition hover:text-rose-700"
+                          title="Hide this movie from future results"
+                        >
+                          Exclude
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           {blacklist.length > 0 && (
-            <div style={{ marginTop: '1rem', background: '#fff5f5', padding: '1rem', borderRadius: '6px' }}>
-              <h4 style={{ marginBottom: '0.5rem' }}>Excluded Movies</h4>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            <div className="mt-6 rounded-lg border border-rose-100 bg-rose-50 p-4">
+              <h4 className="text-base font-semibold text-rose-900">Excluded Movies</h4>
+              <ul className="mt-2 divide-y divide-rose-100 text-sm">
                 {blacklist.map((entry: BlacklistEntry) => (
-                  <li key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0', borderBottom: '1px solid #f0caca' }}>
-                    <span>
-                      {entry.name ?? 'Unknown Movie'}
-                    </span>
+                  <li key={entry.id} className="flex items-center justify-between py-2">
+                    <span>{entry.name ?? 'Unknown Movie'}</span>
                     <button
                       onClick={() => handleBlacklistRemove(entry.id)}
-                      style={{
-                        border: 'none',
-                        background: 'none',
-                        color: '#d9534f',
-                        cursor: 'pointer',
-                        fontSize: '1rem',
-                        lineHeight: 1,
-                      }}
+                      className="text-lg text-rose-500 transition hover:text-rose-600"
                       title="Allow this movie to appear again"
                     >
                       ✕
@@ -578,28 +561,27 @@ export default function Home() {
               </ul>
             </div>
           )}
+
           {/* Groq explain button and panel */}
-          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div />
-            <div style={{ textAlign: 'right' }}>
-              <button
-                onClick={handleGroqExplain}
-                disabled={groqLoading}
-                style={{ padding: '0.6rem 1rem', background: groqLoading ? '#ccc' : '#6c63ff', color: 'white', border: 'none', borderRadius: '6px', cursor: groqLoading ? 'not-allowed' : 'pointer' }}
-              >
-                {groqLoading ? 'Explaining...' : 'Explain with AI'}
-              </button>
-            </div>
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={handleGroqExplain}
+              disabled={groqLoading}
+              className="rounded-lg bg-indigo-500 px-4 py-2 text-white transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {groqLoading ? 'Explaining...' : 'Explain with AI'}
+            </button>
           </div>
 
           {/* Analysis Panel (shows response from Groq) */}
-          <div style={{ marginTop: '1rem' }}>
-              <h4 style={{ marginBottom: '0.5rem' }}>AI Analysis</h4>
-              {groqError && <div style={{ color: 'red', marginBottom: '0.5rem' }}>{groqError}</div>}
-              <div style={{ background: '#f8f8ff', padding: '1rem', borderRadius: '6px', minHeight: '80px' }}
-                // NOTE: content comes from the AI service and may contain HTML. In production consider sanitizing this output before rendering.
-                dangerouslySetInnerHTML={{ __html: groqOutput || '<p>Press "Explain with AI" to send ranking and receive analysis.</p>' }}
-              />
+          <div className="mt-4">
+            <h4 className="text-base font-semibold">AI Analysis</h4>
+            {groqError && <div className="mt-2 text-sm text-rose-600">{groqError}</div>}
+            <div
+              className="mt-2 min-h-20 rounded-lg bg-indigo-50 p-4 text-sm leading-relaxed text-slate-800"
+              // NOTE: content comes from the AI service and may contain HTML. In production consider sanitizing this output before rendering.
+              dangerouslySetInnerHTML={{ __html: groqOutput || '<p>Press "Explain with AI" to send ranking and receive analysis.</p>' }}
+            />
           </div>
         </div>
       )}

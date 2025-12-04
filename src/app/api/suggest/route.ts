@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const db = await getDb();
     // 前方一致検索 (LIMIT 10 で件数を絞る)
     const suggestions = await db.all(
-      'SELECT name FROM nodes WHERE name LIKE ? LIMIT 10',
+      'SELECT name FROM nodes WHERE name LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 10',
       `${query}%`
     );
     return NextResponse.json(suggestions.map((s: any) => s.name));

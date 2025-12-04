@@ -2,3 +2,7 @@
 build
 .gitignore
 README.md
+.next
+node_modules
+next-env.d.ts
+*.log

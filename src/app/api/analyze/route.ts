@@ -18,16 +18,22 @@ async function respondWithTopNodes(rawResult: unknown) {
   const ids = limitedResult.map((r: any) => r.id);
   const placeholders = ids.map(() => '?').join(',');
   const rows = await db.all(
-    `SELECT id, name FROM nodes WHERE id IN (${placeholders})`,
+    `SELECT id, name, ranking FROM nodes WHERE id IN (${placeholders})`,
     ids
   );
-  const idToName = new Map<number, string>();
-  rows.forEach((r: any) => idToName.set(r.id, r.name));
+  const idToMeta = new Map<number, { name: string; ranking: number | null }>();
+  rows.forEach((r: any) =>
+    idToMeta.set(r.id, {
+      name: r.name,
+      ranking: typeof r.ranking === 'number' ? r.ranking : null,
+    })
+  );
 
   const top_nodes = limitedResult.map((r: any) => ({
     id: r.id,
-    name: idToName.get(r.id) ?? String(r.id),
+    name: idToMeta.get(r.id)?.name ?? String(r.id),
     score: r.score,
+    ranking: idToMeta.get(r.id)?.ranking ?? null,
   }));
 
   return NextResponse.json({ status: 'ok', top_nodes });
