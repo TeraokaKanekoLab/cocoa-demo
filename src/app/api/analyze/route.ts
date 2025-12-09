@@ -4,6 +4,15 @@ import { getDb } from '@/lib/db';
 
 const TOP_RESULT_LIMIT = 100;
 
+const resolveUserKey = (req: Request) => {
+  const forwarded = req.headers.get('x-forwarded-host');
+  if (forwarded && forwarded.trim().length > 0) {
+    return forwarded.toLowerCase();
+  }
+  const host = req.headers.get('host');
+  return (host && host.trim().length > 0) ? host.toLowerCase() : 'default';
+};
+
 async function respondWithTopNodes(rawResult: unknown) {
   if (!Array.isArray(rawResult)) {
     return null;
@@ -43,6 +52,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const runner = GraphRunner.getInstance();
+    const userKey = resolveUserKey(req);
 
     // ------------------------------------------
     // パターンA: パラメータ調整 (Stage 2)
@@ -56,7 +66,8 @@ export async function POST(req: Request) {
 
       const result = await runner.execute({
         type: "adjust",
-        c: cValue
+        c: cValue,
+        userKey
       });
       const normalizedResponse = await respondWithTopNodes(result);
       if (normalizedResponse) {
@@ -116,7 +127,8 @@ export async function POST(req: Request) {
 
       const result = await runner.execute({
         type: "analyze",
-        queries: queryList
+        queries: queryList,
+        userKey
       });
       const normalizedResponse = await respondWithTopNodes(result);
       if (normalizedResponse) {

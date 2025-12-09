@@ -12,6 +12,7 @@ Key Features
 - C++ graph analysis engine (built with CMake)
 - Suggest API to assist name input
 - Interactive post-process adjustment via a slider with server-side re-evaluation
+- Multi-port frontend server so that up to four independent browser sessions can run in parallel
 
 Repository Structure (excerpt)
 ---
@@ -45,6 +46,13 @@ npm run dev
 yarn dev
 ```
 
+The custom dev server listens on four ports by default (`http://localhost:3000` through `http://localhost:3003`).
+You can override the list by exporting `FRONTEND_PORTS`, for example:
+
+```bash
+FRONTEND_PORTS="4000,4001" npm run dev
+```
+
 If you want to build and run the C++ server locally, use the `CMakeLists.txt` in the `cpp` directory to build the binary. The application expects the server binary or service to be available (some builds may place artifacts under `build/graph_solver`). Check `cpp/CMakeLists.txt` for build details.
 
 Run with Docker (recommended: Docker Compose)
@@ -70,7 +78,9 @@ docker compose up --build
 docker compose up --build -d
 ```
 
-3. Open http://localhost:3000 in your browser.
+3. Open any of http://localhost:3000, http://localhost:3001, http://localhost:3002, or http://localhost:3003 in your browser.
+
+To change which ports are exposed (for example, when running multiple copies on the same host), set `FRONTEND_PORTS` before starting Docker Compose. The multi-port Node server reads the comma-separated list and binds each port.
 
 If you prefer to pass the API key from your shell instead of `.env`, you can do:
 
@@ -94,6 +104,13 @@ API Endpoints (main)
 - `POST /api/analyze` — Run analysis. Request body examples:
 	- `{ "items": [{ "name": "...", "weight": 1.0 }, ...] }` — initial analysis
 	- `{ "c": 0.5 }` — parameter adjustment requests
+
+Multi-user session handling
+---
+- Each browser session reaches the app through a dedicated port/host (e.g., `localhost:3001`).
+- The API layer forwards the host header to the C++ backend as a `userKey`, so `ppr_map` and the submitted query weights stay isolated per user.
+- Adjust requests (`{ "c": ... }`) reuse the stored map for the same host; submitting from a different port keeps its own independent results.
+- When changing port bindings via `FRONTEND_PORTS`, ensure each parallel user targets a distinct port to receive an independent session.
 
 Contributing
 ---

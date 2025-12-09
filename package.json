@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server/multiport-server.js --dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node server/multiport-server.js --prod",
     "lint": "next lint"
   },
   "dependencies": {

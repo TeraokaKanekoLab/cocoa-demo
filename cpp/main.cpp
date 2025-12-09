@@ -5,6 +5,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <memory>
+#include <unordered_map>
 using namespace std;
 
 #include <nlohmann/json.hpp>
@@ -18,6 +19,11 @@ struct QueryItem {
 struct ResultItem {
     int id;
     double score;
+};
+
+struct SessionState {
+    map<int, double> ppr_map;
+    map<int, double> movie_to_weight;
 };
 
 void from_json(const json& j, QueryItem& p) {
@@ -50,12 +56,10 @@ int main (int argc, char *argv[]) {
     vector<pair<int, double>> ordered_dc = get_ordered_vector(node_to_l2_normalized_dc);
     movie.set_ordered_dc(ordered_dc);
 
-    map<int, double> movie_to_weight;
-
     cout << json{{"status", "ready"}}.dump() << endl;
 
     /* Query Phase */
-    map<int, double> ppr_map;
+    unordered_map<string, SessionState> user_sessions;
     string line;
     while (getline(cin, line)) {
         if (line.empty()) {
@@ -65,23 +69,27 @@ int main (int argc, char *argv[]) {
         try {
             json query_json = json::parse(line);
             string type = query_json.at("type").get<string>();
+            string user_key = query_json.value("userKey", string("default"));
 
             if (type == "analyze") {
                 vector<QueryItem> query_items = query_json.at("queries").get<vector<QueryItem>>();
-                movie_to_weight.clear();
+                SessionState& session = user_sessions[user_key];
+                session.movie_to_weight.clear();
                 for (const QueryItem& item : query_items) {
-                    movie_to_weight.emplace(item.id, item.weight);
+                    session.movie_to_weight[item.id] = item.weight;
                 }
 
-                ppr_map = graph.calc_ppr_by_fora(movie_to_weight, walk_count, alpha);
+                map<int, double> ppr_map = graph.calc_ppr_by_fora(session.movie_to_weight, walk_count, alpha);
         
                 ppr_map.erase(-1);
-                for (const auto&[movie_id, weight] : movie_to_weight) {
+                for (const auto&[movie_id, weight] : session.movie_to_weight) {
                     ppr_map.erase(movie_id);
                 }
 
+                session.ppr_map = ppr_map;
+
                 // return the result if cosine similarity is 0
-                CorrelationAdjuster adjuster(ppr_map, node_to_l2_normalized_dc);
+                CorrelationAdjuster adjuster(session.ppr_map, node_to_l2_normalized_dc);
                 map<int, double> decreased_ppr;
                 double c = adjuster.calc_influence_decreased_ppr(0, decreased_ppr);
 
@@ -102,14 +110,16 @@ int main (int argc, char *argv[]) {
             }
 
             else if (type == "adjust") {
-                if (ppr_map.empty()) {
-                    throw runtime_error("PPR map is empty. Perform 'analyze' query first.");
+                auto session_itr = user_sessions.find(user_key);
+                if (session_itr == user_sessions.end() || session_itr->second.ppr_map.empty()) {
+                    throw runtime_error("PPR map is empty for this user. Perform 'analyze' query first.");
                 }
+                SessionState& session = session_itr->second;
                 double cosine_similarity = query_json.at("c").get<double>();
-                CorrelationAdjuster adjuster(ppr_map, node_to_l2_normalized_dc);
+                CorrelationAdjuster adjuster(session.ppr_map, node_to_l2_normalized_dc);
                 map<int, double> decreased_ppr;
                 double c = adjuster.calc_influence_decreased_ppr(cosine_similarity, decreased_ppr);
-                for (const auto&[movie_id, weight] : movie_to_weight) {
+                for (const auto&[movie_id, weight] : session.movie_to_weight) {
                     decreased_ppr.erase(movie_id);
                 }
                 // c : 次数中心性を射影して定数倍して加減算する際の定数

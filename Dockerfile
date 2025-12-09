@@ -30,6 +30,6 @@ RUN cmake -S . -B build \
 # 5. Next.js ビルド
 RUN npm run build
 
-# 6. アプリ起動
-EXPOSE 3000
+# 6. アプリ起動 (複数ポートをリッスン)
+EXPOSE 3000 3001 3002 3003
 CMD ["npm", "start"]
