@@ -19,7 +19,7 @@ const parsePorts = () => {
     return list;
   }
   // Default: four ports so that up to four independent browser clients can connect
-  return [3000, 3001, 3002, 3003];
+  return [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007];
 };
 
 const ports = parsePorts();
