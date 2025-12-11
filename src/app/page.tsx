@@ -42,6 +42,7 @@ export default function Home() {
   const [groqLoading, setGroqLoading] = useState(false);
   const [groqError, setGroqError] = useState('');
   const [groqOutput, setGroqOutput] = useState('');
+  const [aiSelection, setAiSelection] = useState<string>('groq:openai/gpt-oss-20b');
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
 
   // --- サジェスト機能 ---
@@ -294,10 +295,16 @@ export default function Home() {
     setGroqError('');
     setGroqOutput('');
 
+    const [providerRaw, modelRaw] = aiSelection.split(':');
+    const provider = providerRaw || 'openai';
+    const model = modelRaw || 'gpt-5-mini';
+
     try {
       const payload = {
         rankings: visibleResults.map((r) => ({ name: r.name ?? String(r.id), score: r.score })),
         favoriteMovies: queryItems.map((q) => q.name),
+        provider,
+        model,
       };
 
       const res = await fetch('/api/groq', {
@@ -562,8 +569,21 @@ export default function Home() {
             </div>
           )}
 
-          {/* Groq explain button and panel */}
-          <div className="mt-6 flex justify-end">
+          {/* Groq/ChatGPT explain controls */}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex flex-col text-sm font-semibold text-slate-700">
+              AI Model
+              <select
+                value={aiSelection}
+                onChange={(e) => setAiSelection(e.target.value)}
+                className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              >
+                <option value="groq:openai/gpt-oss-20b">Groq · GPT-OSS 20B</option>
+                <option value="openai:gpt-5">ChatGPT · GPT-5</option>
+                <option value="openai:gpt-5-mini">ChatGPT · GPT-5 mini</option>
+                <option value="openai:gpt-5-nano">ChatGPT · GPT-5 nano</option>
+              </select>
+            </label>
             <button
               onClick={handleGroqExplain}
               disabled={groqLoading}

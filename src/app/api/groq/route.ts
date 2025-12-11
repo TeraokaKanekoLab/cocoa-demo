@@ -14,6 +14,9 @@ const escapeHtml = (s: any) => {
     .replace(/'/g, '&#39;');
 };
 
+type Provider = 'openai' | 'groq';
+type ModelChoice = 'gpt-5' | 'gpt-5-mini' | 'gpt-5-nano' | 'openai/gpt-oss-20b';
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -21,13 +24,32 @@ export async function POST(req: Request) {
       ? (body.favoriteMovies as string[]).map((m) => String(m))
       : [];
     const rankings = Array.isArray(body?.rankings) ? (body.rankings as Ranking[]) : null;
+    const provider: Provider = body?.provider === 'groq' ? 'groq' : 'openai';
+    const requestedModel: ModelChoice | undefined = body?.model;
+
     if (!rankings || rankings.length === 0) {
       return NextResponse.json({ error: 'No rankings provided' }, { status: 400 });
     }
 
     const OPENAI_API_KEY = (globalThis as any)?.process?.env?.OPENAI_API_KEY;
-    if (!OPENAI_API_KEY) {
-      // Fallback simulated analysis when no API key is configured (return HTML)
+    const GROQ_API_KEY = (globalThis as any)?.process?.env?.GROQ_API_KEY;
+
+    const providerConfig = provider === 'groq'
+      ? { apiKey: GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' }
+      : { apiKey: OPENAI_API_KEY, baseURL: undefined };
+
+    const resolvedModel: ModelChoice = (() => {
+      if (provider === 'groq') {
+        return requestedModel === 'openai/gpt-oss-20b' ? requestedModel : 'openai/gpt-oss-20b';
+      }
+      if (requestedModel === 'gpt-5' || requestedModel === 'gpt-5-mini' || requestedModel === 'gpt-5-nano') {
+        return requestedModel;
+      }
+      return 'gpt-5-mini';
+    })();
+
+    // Fallback simulated analysis only for OpenAI path when the key is missing
+    if (provider === 'openai' && !OPENAI_API_KEY) {
       const topN = Math.min(5, rankings.length);
       const topItems = rankings.slice(0, topN);
       const topListHtml = topItems.map((r, i) => `<li>${i + 1}. ${escapeHtml(r.name)} (score: ${Number.isFinite(r.score) ? r.score.toFixed(4) : r.score})</li>`).join('');
@@ -51,9 +73,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ analysis: analysisHtml });
     }
 
+    if (!providerConfig.apiKey) {
+      return NextResponse.json({ error: `Missing API key for provider "${provider}"` }, { status: 400 });
+    }
+
     const client = new OpenAI({
-      apiKey: OPENAI_API_KEY,
-      baseURL: "https://api.groq.com/openai/v1",
+      apiKey: providerConfig.apiKey,
+      baseURL: providerConfig.baseURL,
     })
 
     // Build an improved prompt that asks the model to explain the ranking
@@ -209,42 +235,19 @@ ${favoriteMovies}
 ${rankingText}
 `;
 
-    const response = await client.responses.create({
-        model: 'openai/gpt-oss-20b',
-        input: prompt,
+    // Use chat completions for broader compatibility (Groq does not yet support /responses)
+    const chatResp = await client.chat.completions.create({
+      model: resolvedModel,
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    // Extract a readable text output from the SDK response. We will ensure
-    // the returned `analysis` field is always a string (JSON string or plain text).
-    const extractText = (resp: any): string => {
-      if (!resp) return '';
-      if (typeof resp === 'string') return resp;
-      if (typeof resp.output_text === 'string' && resp.output_text.length > 0) return resp.output_text;
-      // SDK may place text fragments under resp.output[]
-      if (Array.isArray(resp.output)) {
-        return resp.output.map((o: any) => {
-          if (typeof o === 'string') return o;
-          if (typeof o?.content === 'string') return o.content;
-          if (Array.isArray(o?.content)) {
-            return o.content.map((c: any) => (typeof c === 'string' ? c : (typeof c?.text === 'string' ? c.text : ''))).join('');
-          }
-          return '';
-        }).join('\n');
-      }
-      // Fallback: try to stringify a subset of response
-      try {
-        return JSON.stringify(resp);
-      } catch (e) {
-        return String(resp);
-      }
-    };
+    const analysisText = chatResp?.choices?.[0]?.message?.content ?? '';
+    return NextResponse.json({ analysis: analysisText, raw: chatResp });
 
-    const analysisText = extractText(response);
-    // Ensure we return a string in `analysis` so frontend can display directly.
-    return NextResponse.json({ analysis: analysisText, raw: response });
-
-  } catch (error) {
-    console.error('API Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('API Error:', error?.message || error);
+    const status = error?.status ?? 500;
+    const message = error?.error?.message || error?.message || 'Internal Server Error';
+    return NextResponse.json({ error: message }, { status });
   }
 }
