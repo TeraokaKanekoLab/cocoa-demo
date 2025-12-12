@@ -15,7 +15,12 @@ const escapeHtml = (s: any) => {
 };
 
 type Provider = 'openai' | 'groq';
-type ModelChoice = 'gpt-5' | 'gpt-5-mini' | 'gpt-5-nano' | 'openai/gpt-oss-20b';
+type ModelChoice =
+  | 'gpt-5'
+  | 'gpt-5-mini'
+  | 'gpt-5-nano'
+  | 'openai/gpt-oss-20b'
+  | 'openai/gpt-oss-120b';
 
 export async function POST(req: Request) {
   try {
@@ -40,7 +45,10 @@ export async function POST(req: Request) {
 
     const resolvedModel: ModelChoice = (() => {
       if (provider === 'groq') {
-        return requestedModel === 'openai/gpt-oss-20b' ? requestedModel : 'openai/gpt-oss-20b';
+        if (requestedModel === 'openai/gpt-oss-20b' || requestedModel === 'openai/gpt-oss-120b') {
+          return requestedModel;
+        }
+        return 'openai/gpt-oss-20b';
       }
       if (requestedModel === 'gpt-5' || requestedModel === 'gpt-5-mini' || requestedModel === 'gpt-5-nano') {
         return requestedModel;

@@ -579,6 +579,7 @@ export default function Home() {
                 className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
               >
                 <option value="groq:openai/gpt-oss-20b">Groq · GPT-OSS 20B</option>
+                <option value="groq:openai/gpt-oss-120b">Groq · GPT-OSS 120B</option>
                 <option value="openai:gpt-5">ChatGPT · GPT-5</option>
                 <option value="openai:gpt-5-mini">ChatGPT · GPT-5 mini</option>
                 <option value="openai:gpt-5-nano">ChatGPT · GPT-5 nano</option>
