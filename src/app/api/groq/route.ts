@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     // Build an improved prompt that asks the model to explain the ranking
     const rankingText = rankings.map(r => `${r.name}: ${r.score}`).join('\n');
     const favoriteList = favoriteMovies.length > 0 ? favoriteMovies.join(', ') : '（指定なし）';
-    const prompt = `Act as an Movie Analyst.
+    const prompt = `Act as a Movie Analyst.
 Your goal is to recommend movies based on user favorites, displayed in a constrained text box (vertical flow).
 You must explain the recommendation logically using the provided "Score".
 
@@ -104,14 +104,14 @@ You must explain the recommendation logically using the provided "Score".
 # Output Format
 - Output **ONLY** a raw HTML snippet wrapped in a single \`<div>\`.
 - Do NOT use markdown code blocks.
-- **Language**: Japanese (Must be written in natural, professional Japanese).
+- **Language**: English (Must be written in natural, professional English).
 - **Layout**: Simple, vertical flow. No grids, no columns.
 - **CSS**: Tailwind CSS.
 - **Max Font Size**: Use classes equivalent to h3 or h4 (e.g., \`text-base\`, \`text-lg\`).
 
 # Content Guidelines (Crucial)
 1. **Strict Reference Rule**: When explaining the connection, **ONLY refer to movies explicitly listed in the "User Favorites" input**. Do NOT hallucinate or mention movies that are not in the input list.
-2. **Translation of References**: When mentioning a "User Favorite" movie title in the text, **always translate it into Japanese** (e.g., refer to "The Godfather" as "『ゴッドファーザー』").
+2. **Title References**: Use the official English titles for all movies.
 3. **General Inference**: It is okay to infer general tastes (e.g., "You like suspense") based on the input, but do not name-drop unlisted films.
 
 # Content Structure
@@ -119,13 +119,12 @@ You must explain the recommendation logically using the provided "Score".
    - **Theme Header**: Simple styling.
    - **Movie Items**:
      - **Title**: Movie title (\`font-bold\`).
-       - *Instruction*: **Translate the title to Japanese** if an official Japanese title exists. If the movie is very obscure or has no official Japanese title, use the original English title.
      - **Badge**: Display the Score clearly (\`font-mono\`).
      - **Description**: A single paragraph combining:
        1. **Overview**: Briefly explain what kind of movie it is.
        2. **Score**: Mention the specific score value.
-       3. **Connection**: Explain *why* it fits by referencing **ONLY** the provided User Favorites (using their Japanese titles).
-2. **Summary Section**: A final section titled "まとめ".
+       3. **Connection**: Explain *why* it fits by referencing **ONLY** the provided User Favorites.
+2. **Summary Section**: A final section titled "Summary".
    - **Format**: A single paragraph.
    - **Content**: Summarize the user's detected preference and the recommendation strategy in 2-3 sentences.
 
@@ -142,43 +141,43 @@ Schindler's List (1993)
 **Output:**
 <div class="font-sans text-gray-800 leading-relaxed p-2">
   <h3 class="text-base font-bold text-gray-800 mb-3 flex items-center border-l-4 border-indigo-500 pl-2">
-    希望と再生のドラマ
+    Drama of Hope and Rebirth
   </h3>
   <div class="space-y-6 mb-8">
     <div>
-      <div class="font-bold text-indigo-700 text-base">ショーシャンクの空に (1994)</div>
+      <div class="font-bold text-indigo-700 text-base">The Shawshank Redemption (1994)</div>
       <div class="mt-1 mb-2">
         <span class="bg-indigo-50 text-indigo-800 text-xs px-2 py-1 rounded border border-indigo-100 font-mono">
-          適合スコア: 0.0385
+          Match Score: 0.0385
         </span>
       </div>
       <p class="text-sm text-gray-700">
-        無実の罪で投獄された男が、絶望的な状況下でも決して希望を捨てずに生き抜く姿を描いた不朽のヒューマンドラマです。今回の分析においてトップとなるスコア <strong>0.0385</strong> を記録しており、数値上、今のあなたに最も強く推奨できる「必見の一本」と言えます。あなたが『シンドラーのリスト』で見出した「極限状態における人間の尊厳」という重厚なテーマと、本作が描く希望の物語は、深いレベルで共鳴するはずです。
+        This is an enduring human drama depicting a man imprisoned for a crime he didn't commit, who never loses hope despite desperate circumstances. Recording a top score of <strong>0.0385</strong> in this analysis, the data suggests this is a "must-watch" for you. The profound theme of "human dignity in extreme conditions" found in your favorite, <em>Schindler's List</em>, resonates deeply with the story of hope portrayed in this film.
       </p>
     </div>
   </div>
 
   <h3 class="text-base font-bold text-gray-800 mb-3 flex items-center border-l-4 border-teal-500 pl-2">
-    認識と現実のサスペンス
+    Suspense of Perception and Reality
   </h3>
   <div class="space-y-6 mb-8">
     <div>
-      <div class="font-bold text-teal-700 text-base">インセプション (2010)</div>
+      <div class="font-bold text-teal-700 text-base">Inception (2010)</div>
       <div class="mt-1 mb-2">
         <span class="bg-teal-50 text-teal-800 text-xs px-2 py-1 rounded border border-teal-100 font-mono">
-          適合スコア: 0.0214
+          Match Score: 0.0214
         </span>
       </div>
       <p class="text-sm text-gray-700">
-        他人の夢の中に潜入し、潜在意識からアイデアを盗み出すという斬新な設定のSFアクション大作です。スコアは <strong>0.0214</strong> と上位に位置しており、あなたの嗜好ベクトルと高い合致率を示しています。特に『ユージュアル・サスペクツ』のような「最後まで予測不能な展開」や「複雑に組み上げられた脚本」を楽しむ知的好奇心に対して、この多層的な構造が完璧にフィットします。
+        A sci-fi action blockbuster with a novel premise of infiltrating dreams to steal ideas from the subconscious. With a score of <strong>0.0214</strong>, it ranks highly and shows a strong alignment with your taste vector. Specifically, the multi-layered structure of this film perfectly fits the intellectual curiosity you show for "unpredictable plot twists" and "complex screenplays," as seen in <em>The Usual Suspects</em>.
       </p>
     </div>
   </div>
   
   <div class="bg-gray-50 p-4 rounded-lg text-sm border border-gray-200 mt-6">
-    <h4 class="font-bold text-gray-700 mb-2">まとめ</h4>
+    <h4 class="font-bold text-gray-700 mb-2">Summary</h4>
     <p class="text-gray-600">
-      あなたの選んだ映画リストからは、逆境の中で輝く人間性を描いた感動作や、予測不能な展開を見せる緻密なサスペンスを好む傾向が強く見受けられます。今回の推薦リストでは、そうした「物語の重み」と「構成の巧みさ」を兼ね備えた作品を中心に、AIスコアが高く算出されたものを厳選しました。
+      Your movie list indicates a strong preference for moving dramas that shine humanity in adversity, as well as intricate suspense films with unpredictable developments. In this recommendation list, we have carefully selected high-scoring AI-analyzed works that combine "narrative weight" with "structural ingenuity."
     </p>
   </div>
 </div>
