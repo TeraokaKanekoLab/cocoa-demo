@@ -1,0 +1,64 @@
+{
+  "Home": {
+    "title": "Graph Analysis Demo",
+    "sections": {
+      "queryBuilder": "1. Query Builder",
+      "postProcess": "2. Post-Process Adjustment",
+      "topMovies": "Top Movies"
+    },
+    "labels": {
+      "movieName": "Movie Name",
+      "weight": "Weight",
+      "parameter": "Parameter",
+      "aiModel": "AI Model",
+      "aiAnalysis": "AI Analysis",
+      "excludedMovies": "Excluded Movies"
+    },
+    "placeholders": {
+      "movieName": "Type movie name (e.g. Matrix)...",
+      "aiPanel": "Press \"Explain with AI\" to send ranking and receive analysis."
+    },
+    "buttons": {
+      "add": "Add",
+      "runAnalysis": "Run Analysis",
+      "loadingGraph": "Loading Graph...",
+      "analyzing": "Analyzing...",
+      "exclude": "Exclude",
+      "explain": "Explain with AI",
+      "explaining": "Explaining..."
+    },
+    "tooltips": {
+      "weightLocked": "Cannot change weight while analysis is running",
+      "exclude": "Hide this movie from future results",
+      "allow": "Allow this movie to appear again"
+    },
+    "adjust": {
+      "minor": "Minor (−1)",
+      "major": "Major (+1)",
+      "description1": "Move the slider to emphasize different content types after analysis. Values near <b>+1</b> highlight more <b>major</b> content; values near <b>−1</b> surface more <b>minor</b> nodes.",
+      "description2": "Tip: drag towards <b>Major</b> to surface prominent nodes, or towards <b>Minor</b> to explore peripheral ones."
+    },
+    "table": {
+      "rank": "Rank",
+      "name": "Name",
+      "score": "Score",
+      "actions": "Actions"
+    },
+    "misc": {
+      "unknownMovie": "Unknown Movie",
+      "errorBanner": "Error: {message}"
+    },
+    "errors": {
+      "emptyMovieName": "Please enter a movie name",
+      "duplicate": "\"{name}\" is already in the list",
+      "nameValidationFailed": "Name validation failed",
+      "notFoundInDb": "\"{name}\" not found in database",
+      "validationError": "Validation error",
+      "serverError": "Server Error {status}: {text}",
+      "analysisUnexpected": "Analysis failed: unexpected response",
+      "invalidJson": "Invalid JSON response: {text}",
+      "requestTimeout": "Request timed out (30s)",
+      "networkError": "Network error"
+    }
+  }
+}

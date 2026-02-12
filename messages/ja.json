@@ -1,0 +1,64 @@
+{
+  "Home": {
+    "title": "グラフ解析デモ",
+    "sections": {
+      "queryBuilder": "1. クエリビルダー",
+      "postProcess": "2. 事後調整",
+      "topMovies": "上位の映画"
+    },
+    "labels": {
+      "movieName": "映画名",
+      "weight": "重み",
+      "parameter": "パラメータ",
+      "aiModel": "AIモデル",
+      "aiAnalysis": "AI分析",
+      "excludedMovies": "除外した映画"
+    },
+    "placeholders": {
+      "movieName": "映画名を入力（例: Matrix）...",
+      "aiPanel": "「AIで説明」を押すとランキングを送信し、分析結果を受け取ります。"
+    },
+    "buttons": {
+      "add": "追加",
+      "runAnalysis": "解析を実行",
+      "loadingGraph": "グラフを読み込み中...",
+      "analyzing": "解析中...",
+      "exclude": "除外",
+      "explain": "AIで説明",
+      "explaining": "説明生成中..."
+    },
+    "tooltips": {
+      "weightLocked": "解析実行中は重みを変更できません",
+      "exclude": "今後の結果からこの映画を非表示にします",
+      "allow": "この映画を再び表示できるようにします"
+    },
+    "adjust": {
+      "minor": "マイナー (−1)",
+      "major": "メジャー (+1)",
+      "description1": "スライダーを動かすと、解析後の結果で強調されるノード種別を切り替えられます。値が <b>+1</b> に近いほど <b>メジャー</b> なノードが、<b>−1</b> に近いほど <b>マイナー</b> なノードが上位に出やすくなります。",
+      "description2": "ヒント: <b>メジャー</b> 側に寄せると目立つノードを、<b>マイナー</b> 側に寄せると周辺ノードを探索しやすくなります。"
+    },
+    "table": {
+      "rank": "順位",
+      "name": "作品名",
+      "score": "スコア",
+      "actions": "操作"
+    },
+    "misc": {
+      "unknownMovie": "不明な映画",
+      "errorBanner": "エラー: {message}"
+    },
+    "errors": {
+      "emptyMovieName": "映画名を入力してください",
+      "duplicate": "\"{name}\" はすでにリストにあります",
+      "nameValidationFailed": "名前の検証に失敗しました",
+      "notFoundInDb": "\"{name}\" はデータベースに見つかりません",
+      "validationError": "検証エラー",
+      "serverError": "サーバーエラー {status}: {text}",
+      "analysisUnexpected": "解析に失敗しました: 予期しないレスポンス",
+      "invalidJson": "JSONの解析に失敗しました: {text}",
+      "requestTimeout": "リクエストがタイムアウトしました（30秒）",
+      "networkError": "ネットワークエラー"
+    }
+  }
+}

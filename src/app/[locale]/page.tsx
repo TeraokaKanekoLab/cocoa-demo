@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 // 型定義
 type QueryItem = { name: string; weight: number };
@@ -8,6 +11,9 @@ type ResultItem = { id: number; score: number; name?: string; ranking?: number |
 type BlacklistEntry = { id: number; name?: string };
 
 export default function Home() {
+  const t = useTranslations('Home');
+  const locale = useLocale();
+
   // --- State管理 ---
   // 入力フォーム用
   const [inputName, setInputName] = useState('');
@@ -16,11 +22,11 @@ export default function Home() {
 
   // サーバー(C++)の準備状態
   const [serverReady, setServerReady] = useState(false);
-  
+
   // クエリリストと結果
   const [queryItems, setQueryItems] = useState<QueryItem[]>([]);
   const [results, setResults] = useState<ResultItem[]>([]);
-  
+
   // 調整パラメータ (-1.0 ~ 1.0)
   const [cParam, setCParam] = useState<number>(0.0);
   // adjust request state: whether a request is in-flight and a pending value
@@ -34,7 +40,7 @@ export default function Home() {
     if (!Number.isFinite(v)) return 0;
     return Math.max(-CLAMP_MAX, Math.min(CLAMP_MAX, v));
   };
-  
+
   // UI状態
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -69,36 +75,36 @@ export default function Home() {
   }, [inputName]);
 
   useEffect(() => {
-      // コンポーネントマウント時に1回だけ実行
-      const waitForServer = async () => {
-        try {
-          // このfetchは、サーバーの準備ができるまでレスポンスが返ってこない(Pendingになる)
-          // そのため、ここで await していればよい
-          await fetch('/api/status');
-          
-          // レスポンスが返ってきた＝準備完了
-          setServerReady(true);
-        } catch (e) {
-          console.error("Connection failed", e);
-          // エラー時の再試行ロジックが必要ならここに記述
-        }
-      };
+    // コンポーネントマウント時に1回だけ実行
+    const waitForServer = async () => {
+      try {
+        // このfetchは、サーバーの準備ができるまでレスポンスが返ってこない(Pendingになる)
+        // そのため、ここで await していればよい
+        await fetch('/api/status');
 
-      waitForServer();
-    }, []); // 依存配列は空
+        // レスポンスが返ってきた＝準備完了
+        setServerReady(true);
+      } catch (e) {
+        console.error('Connection failed', e);
+        // エラー時の再試行ロジックが必要ならここに記述
+      }
+    };
+
+    void waitForServer();
+  }, []); // 依存配列は空
 
   // --- ハンドラ ---
-  
+
   // リストに追加
   const handleAddItem = async () => {
     const normalizedName = inputName.trim();
     if (!normalizedName) {
-      setError('Please enter a movie name');
+      setError(t('errors.emptyMovieName'));
       return;
     }
 
     if (queryItems.some((item: QueryItem) => item.name === normalizedName)) {
-      setError(`"${normalizedName}" is already in the list`);
+      setError(t('errors.duplicate', { name: normalizedName }));
       return;
     }
 
@@ -106,14 +112,14 @@ export default function Home() {
       // Validate the name exists by querying the suggest API for exact match
       const res = await fetch(`/api/suggest?q=${encodeURIComponent(normalizedName)}`);
       if (!res.ok) {
-        setError('Name validation failed');
+        setError(t('errors.nameValidationFailed'));
         return;
       }
       const data = await res.json();
       // suggest returns names matching the prefix; require exact match
       const exists = Array.isArray(data) && data.includes(normalizedName);
       if (!exists) {
-        setError(`"${normalizedName}" not found in database`);
+        setError(t('errors.notFoundInDb', { name: normalizedName }));
         return;
       }
 
@@ -123,7 +129,7 @@ export default function Home() {
       setError('');
     } catch (e) {
       console.error('Add validation error', e);
-      setError('Validation error');
+      setError(t('errors.validationError'));
     }
   };
 
@@ -185,7 +191,7 @@ export default function Home() {
       // レスポンスをまずテキストで受け取り、JSONパースを安全に行う
       const text = await res.text();
       if (!res.ok) {
-        setError(`Server Error ${res.status}: ${text}`);
+        setError(t('errors.serverError', { status: res.status, text }));
       } else {
         try {
           const data = JSON.parse(text);
@@ -197,17 +203,17 @@ export default function Home() {
           } else if (data && (data.error || data.message)) {
             setError(data.error || data.message);
           } else {
-            setError('Analysis failed: unexpected response');
+            setError(t('errors.analysisUnexpected'));
           }
         } catch (e) {
-          setError(`Invalid JSON response: ${text}`);
+          setError(t('errors.invalidJson', { text }));
         }
       }
     } catch (e) {
       if ((e as any)?.name === 'AbortError') {
-        setError('Request timed out (30s)');
+        setError(t('errors.requestTimeout'));
       } else {
-        setError('Network error');
+        setError(t('errors.networkError'));
       }
     } finally {
       setLoading(false);
@@ -288,6 +294,13 @@ export default function Home() {
     void sendAdjust(clamped);
   };
 
+  const selectedNames = new Set(queryItems.map((item: QueryItem) => item.name));
+  const blacklistIdSet = new Set(blacklist.map((entry: BlacklistEntry) => entry.id));
+  const visibleResults = results
+    .filter((res: ResultItem) => !blacklistIdSet.has(res.id))
+    .filter((res: ResultItem) => !res.name || !selectedNames.has(res.name))
+    .slice(0, 10);
+
   // --- Groq Explain: send ranking + names/scores to /api/groq ---
   const handleGroqExplain = async () => {
     if (visibleResults.length === 0) return;
@@ -301,6 +314,7 @@ export default function Home() {
 
     try {
       const payload = {
+        locale,
         rankings: visibleResults.map((r) => ({ name: r.name ?? String(r.id), score: r.score })),
         favoriteMovies: queryItems.map((q) => q.name),
         provider,
@@ -315,7 +329,7 @@ export default function Home() {
 
       const text = await res.text();
       if (!res.ok) {
-        setGroqError(`Server Error ${res.status}: ${text}`);
+        setGroqError(t('errors.serverError', { status: res.status, text }));
       } else {
         try {
           const data = JSON.parse(text);
@@ -334,7 +348,7 @@ export default function Home() {
       }
     } catch (e) {
       console.error('Groq request failed', e);
-      setGroqError('Network error');
+      setGroqError(t('errors.networkError'));
     } finally {
       setGroqLoading(false);
     }
@@ -350,32 +364,30 @@ export default function Home() {
     'rounded-lg px-6 py-2 text-white transition disabled:cursor-not-allowed disabled:opacity-70',
     !serverReady ? 'bg-slate-400' : loading ? 'bg-lime-600' : 'bg-emerald-500 hover:bg-emerald-600',
   ].join(' ');
-  const selectedNames = new Set(queryItems.map((item: QueryItem) => item.name));
-  const blacklistIdSet = new Set(blacklist.map((entry: BlacklistEntry) => entry.id));
-  const visibleResults = results
-    .filter((res: ResultItem) => !blacklistIdSet.has(res.id))
-    .filter((res: ResultItem) => !res.name || !selectedNames.has(res.name))
-    .slice(0, 10);
 
   return (
     <div className="mx-auto max-w-4xl p-8 font-sans">
-      <h1 className="border-b-2 border-slate-800 pb-3 text-3xl font-semibold">Graph Analysis Demo</h1>
+      <div className="flex items-start justify-between gap-4 border-b-2 border-slate-800 pb-3">
+        <h1 className="text-3xl font-semibold">{t('title')}</h1>
+        <LanguageSwitcher />
+      </div>
 
       {/* --- 入力エリア --- */}
       <div className="mt-8 rounded-xl bg-white p-6 shadow">
-        <h3 className="text-xl font-semibold">1. Query Builder</h3>
+        <h3 className="text-xl font-semibold">{t('sections.queryBuilder')}</h3>
         <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end">
           {/* ノード名入力 (サジェスト付き) */}
           <div className="flex-1">
-            <label className="mb-2 block text-sm font-semibold uppercase tracking-wide text-slate-600">Movie Name</label>
-            {/* datalistと連携 */}
+            <label className="mb-2 block text-sm font-semibold uppercase tracking-wide text-slate-600">
+              {t('labels.movieName')}
+            </label>
             <input
               type="text"
               list="suggestions-list"
               ref={nameInputRef}
               value={inputName}
               onChange={(e) => setInputName(e.target.value)}
-              placeholder="Type movie name (e.g. Matrix)..."
+              placeholder={t('placeholders.movieName')}
               className="h-10 w-full rounded-lg border border-slate-300 px-3 text-base shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
             />
             <datalist id="suggestions-list">
@@ -387,7 +399,9 @@ export default function Home() {
 
           {/* 重み入力 */}
           <div className="w-full md:w-40">
-            <label className="mb-2 block text-sm font-semibold uppercase tracking-wide text-slate-600">Weight</label>
+            <label className="mb-2 block text-sm font-semibold uppercase tracking-wide text-slate-600">
+              {t('labels.weight')}
+            </label>
             <input
               type="number"
               step="1"
@@ -397,12 +411,8 @@ export default function Home() {
             />
           </div>
 
-          <button
-            onClick={handleAddItem}
-            disabled={isAddDisabled}
-            className={addButtonClass}
-          >
-            Add
+          <button onClick={handleAddItem} disabled={isAddDisabled} className={addButtonClass}>
+            {t('buttons.add')}
           </button>
         </div>
 
@@ -415,7 +425,7 @@ export default function Home() {
                   <div className="flex flex-wrap items-center gap-4">
                     <b className="text-slate-800">{item.name}</b>
                     <label className="flex items-center gap-2 text-sm text-slate-600">
-                      Weight
+                      {t('labels.weight')}
                       <input
                         type="number"
                         step="1"
@@ -427,7 +437,7 @@ export default function Home() {
                           setQueryItems(newItems);
                         }}
                         disabled={loading}
-                        title={loading ? 'Cannot change weight while analysis is running' : undefined}
+                        title={loading ? t('tooltips.weightLocked') : undefined}
                         className="w-20 rounded border border-slate-300 px-2 py-1 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:bg-slate-200"
                       />
                     </label>
@@ -442,12 +452,12 @@ export default function Home() {
               ))}
             </ul>
             <div className="mt-4 flex justify-end">
-              <button
-                onClick={handleAnalyze}
-                disabled={loading || !serverReady}
-                className={runAnalysisButtonClass}
-              >
-                {!serverReady ? 'Loading Graph...' : loading ? 'Analyzing...' : 'Run Analysis'}
+              <button onClick={handleAnalyze} disabled={loading || !serverReady} className={runAnalysisButtonClass}>
+                {!serverReady
+                  ? t('buttons.loadingGraph')
+                  : loading
+                    ? t('buttons.analyzing')
+                    : t('buttons.runAnalysis')}
               </button>
             </div>
           </div>
@@ -457,7 +467,7 @@ export default function Home() {
       {/* エラー表示 */}
       {error && (
         <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700">
-          Error: {error}
+          {t('misc.errorBanner', { message: error })}
         </div>
       )}
 
@@ -466,14 +476,14 @@ export default function Home() {
         <div className="mt-8 rounded-xl bg-white p-6 shadow">
           {/* Stage 2: パラメータ調整 */}
           <div className="rounded-lg bg-indigo-50 p-4">
-            <h3 className="text-lg font-semibold text-indigo-900">2. Post-Process Adjustment</h3>
+            <h3 className="text-lg font-semibold text-indigo-900">{t('sections.postProcess')}</h3>
             <div className="mt-3 flex flex-col gap-3">
               <div className="flex flex-col gap-3 md:flex-row md:items-center">
                 <span className="font-semibold text-indigo-900">
-                  Parameter: {Number.isFinite(cParam) ? cParam.toFixed(2) : '—'}
+                  {t('labels.parameter')}: {Number.isFinite(cParam) ? cParam.toFixed(2) : '—'}
                 </span>
                 <div className="flex flex-1 items-center gap-3">
-                  <span className="text-sm text-slate-600">Minor (−1)</span>
+                  <span className="text-sm text-slate-600">{t('adjust.minor')}</span>
                   <input
                     type="range"
                     min="-1"
@@ -483,30 +493,34 @@ export default function Home() {
                     onChange={(e) => handleAdjust(parseFloat(e.target.value))}
                     className="flex-1 accent-indigo-600"
                   />
-                  <span className="text-sm text-slate-600">Major (+1)</span>
+                  <span className="text-sm text-slate-600">{t('adjust.major')}</span>
                 </div>
               </div>
 
               <p className="text-sm text-slate-600">
-                Move the slider to emphasize different content types after analysis. Values near <b>+1</b> highlight more <b>major</b> content; values near <b>−1</b> surface more <b>minor</b> nodes.
+                {t.rich('adjust.description1', {
+                  b: (chunks) => <b>{chunks}</b>,
+                })}
               </p>
               <p className="text-sm text-slate-600">
-                Tip: drag towards <b>Major</b> to surface prominent nodes, or towards <b>Minor</b> to explore peripheral ones.
+                {t.rich('adjust.description2', {
+                  b: (chunks) => <b>{chunks}</b>,
+                })}
               </p>
             </div>
           </div>
 
           {/* 結果リスト */}
           <div className="mt-6">
-            <h3 className="text-xl font-semibold">Top Movies</h3>
+            <h3 className="text-xl font-semibold">{t('sections.topMovies')}</h3>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    <th className="px-3 py-2">Rank</th>
-                    <th className="px-3 py-2">Name</th>
-                    <th className="px-3 py-2">Score</th>
-                    <th className="px-3 py-2 text-center">Actions</th>
+                    <th className="px-3 py-2">{t('table.rank')}</th>
+                    <th className="px-3 py-2">{t('table.name')}</th>
+                    <th className="px-3 py-2">{t('table.score')}</th>
+                    <th className="px-3 py-2 text-center">{t('table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -537,9 +551,9 @@ export default function Home() {
                         <button
                           onClick={() => handleBlacklistAdd(res)}
                           className="text-sm font-semibold text-rose-600 underline-offset-2 transition hover:text-rose-700"
-                          title="Hide this movie from future results"
+                          title={t('tooltips.exclude')}
                         >
-                          Exclude
+                          {t('buttons.exclude')}
                         </button>
                       </td>
                     </tr>
@@ -551,15 +565,15 @@ export default function Home() {
 
           {blacklist.length > 0 && (
             <div className="mt-6 rounded-lg border border-rose-100 bg-rose-50 p-4">
-              <h4 className="text-base font-semibold text-rose-900">Excluded Movies</h4>
+              <h4 className="text-base font-semibold text-rose-900">{t('labels.excludedMovies')}</h4>
               <ul className="mt-2 divide-y divide-rose-100 text-sm">
                 {blacklist.map((entry: BlacklistEntry) => (
                   <li key={entry.id} className="flex items-center justify-between py-2">
-                    <span>{entry.name ?? 'Unknown Movie'}</span>
+                    <span>{entry.name ?? t('misc.unknownMovie')}</span>
                     <button
                       onClick={() => handleBlacklistRemove(entry.id)}
                       className="text-lg text-rose-500 transition hover:text-rose-600"
-                      title="Allow this movie to appear again"
+                      title={t('tooltips.allow')}
                     >
                       ✕
                     </button>
@@ -572,7 +586,7 @@ export default function Home() {
           {/* Groq/ChatGPT explain controls */}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <label className="flex flex-col text-sm font-semibold text-slate-700">
-              AI Model
+              {t('labels.aiModel')}
               <select
                 value={aiSelection}
                 onChange={(e) => setAiSelection(e.target.value)}
@@ -590,18 +604,19 @@ export default function Home() {
               disabled={groqLoading}
               className="rounded-lg bg-indigo-500 px-4 py-2 text-white transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
-              {groqLoading ? 'Explaining...' : 'Explain with AI'}
+              {groqLoading ? t('buttons.explaining') : t('buttons.explain')}
             </button>
           </div>
 
           {/* Analysis Panel (shows response from Groq) */}
           <div className="mt-4">
-            <h4 className="text-base font-semibold">AI Analysis</h4>
+            <h4 className="text-base font-semibold">{t('labels.aiAnalysis')}</h4>
             {groqError && <div className="mt-2 text-sm text-rose-600">{groqError}</div>}
             <div
               className="mt-2 min-h-20 rounded-lg bg-indigo-50 p-4 text-sm leading-relaxed text-slate-800"
-              // NOTE: content comes from the AI service and may contain HTML. In production consider sanitizing this output before rendering.
-              dangerouslySetInnerHTML={{ __html: groqOutput || '<p>Press "Explain with AI" to send ranking and receive analysis.</p>' }}
+              dangerouslySetInnerHTML={{
+                __html: groqOutput || `<p>${t('placeholders.aiPanel')}</p>`,
+              }}
             />
           </div>
         </div>
