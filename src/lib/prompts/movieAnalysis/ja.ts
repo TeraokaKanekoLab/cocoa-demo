@@ -53,8 +53,8 @@ Note: Since the output language is Japanese, you may label the summary section i
 Schindler's List (1993)
 
 **Input (Recommendation List):**
-1 "Shawshank Redemption, The (1994)": 0.0385
-2 "Inception (2010)": 0.0214
+1 "ショーシャンクの空に": 0.0385
+2 "インセプション": 0.0214
 
 **Output:**
 <div class="font-sans text-gray-800 leading-relaxed p-2">
@@ -63,7 +63,7 @@ Schindler's List (1993)
   </h3>
   <div class="space-y-6 mb-8">
     <div>
-      <div class="font-bold text-indigo-700 text-base">The Shawshank Redemption (1994)</div>
+      <div class="font-bold text-indigo-700 text-base">ショーシャンクの空に</div>
       <div class="mt-1 mb-2">
         <span class="bg-indigo-50 text-indigo-800 text-xs px-2 py-1 rounded border border-indigo-100 font-mono">
           マッチスコア: 0.0385
@@ -80,7 +80,7 @@ Schindler's List (1993)
   </h3>
   <div class="space-y-6 mb-8">
     <div>
-      <div class="font-bold text-teal-700 text-base">Inception (2010)</div>
+      <div class="font-bold text-teal-700 text-base">インセプション</div>
       <div class="mt-1 mb-2">
         <span class="bg-teal-50 text-teal-800 text-xs px-2 py-1 rounded border border-teal-100 font-mono">
           マッチスコア: 0.0214

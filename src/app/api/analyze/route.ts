@@ -27,13 +27,14 @@ async function respondWithTopNodes(rawResult: unknown) {
   const ids = limitedResult.map((r: any) => r.id);
   const placeholders = ids.map(() => '?').join(',');
   const rows = await db.all(
-    `SELECT id, name, ranking FROM nodes WHERE id IN (${placeholders})`,
+    `SELECT id, name, title_ja, ranking FROM nodes WHERE id IN (${placeholders})`,
     ids
   );
-  const idToMeta = new Map<number, { name: string; ranking: number | null }>();
+  const idToMeta = new Map<number, { name: string; title_ja: string | null; ranking: number | null }>();
   rows.forEach((r: any) =>
     idToMeta.set(r.id, {
       name: r.name,
+      title_ja: typeof r.title_ja === 'string' ? r.title_ja : null,
       ranking: typeof r.ranking === 'number' ? r.ranking : null,
     })
   );
@@ -41,6 +42,7 @@ async function respondWithTopNodes(rawResult: unknown) {
   const top_nodes = limitedResult.map((r: any) => ({
     id: r.id,
     name: idToMeta.get(r.id)?.name ?? String(r.id),
+    title_ja: idToMeta.get(r.id)?.title_ja ?? null,
     score: r.score,
     ranking: idToMeta.get(r.id)?.ranking ?? null,
   }));
@@ -82,6 +84,7 @@ export async function POST(req: Request) {
     // ------------------------------------------
     else if (Array.isArray(body.items) && body.items.length > 0) {
       const { items } = body; // [{name: "A", weight: 1.0}, ...]
+      const locale = body.locale === 'ja' ? 'ja' : 'en';
       const blacklistIds: number[] = Array.isArray(body.blacklistIds)
         ? Array.from(
             new Set(
@@ -94,17 +97,21 @@ export async function POST(req: Request) {
       
       const db = await getDb();
       const nodeNames = items.map((i: any) => i.name);
+      const lookupColumn = locale === 'ja' ? 'COALESCE(title_ja, name)' : 'name';
       
       // 名前 -> ID 一括変換
       const placeholders = nodeNames.map(() => '?').join(',');
       const rows = await db.all(
-        `SELECT id, name FROM nodes WHERE name IN (${placeholders})`,
+        `SELECT id, name, title_ja FROM nodes WHERE ${lookupColumn} IN (${placeholders})`,
         nodeNames
       );
 
       // マップ作成 (Name -> ID)
       const nameToId = new Map<string, number>();
-      rows.forEach((r: any) => nameToId.set(r.name, r.id));
+      rows.forEach((r: any) => {
+        const key = locale === 'ja' ? (r.title_ja ?? r.name) : r.name;
+        nameToId.set(key, r.id);
+      });
 
       // C++送信用リスト作成
       const queryList = [];

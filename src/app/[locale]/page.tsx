@@ -7,7 +7,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 // 型定義
 type QueryItem = { name: string; weight: number };
-type ResultItem = { id: number; score: number; name?: string; ranking?: number | null };
+type ResultItem = { id: number; score: number; name?: string; title_ja?: string | null; ranking?: number | null };
 type BlacklistEntry = { id: number; name?: string };
 
 export default function Home() {
@@ -59,7 +59,7 @@ export default function Home() {
         return;
       }
       try {
-        const res = await fetch(`/api/suggest?q=${encodeURIComponent(inputName)}`);
+        const res = await fetch(`/api/suggest?q=${encodeURIComponent(inputName)}&locale=${locale}`);
         if (res.ok) {
           const data = await res.json();
           setSuggestions(data);
@@ -72,7 +72,7 @@ export default function Home() {
     // デバウンス処理（入力停止後300msで検索）
     const timer = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(timer);
-  }, [inputName]);
+  }, [inputName, locale]);
 
   useEffect(() => {
     // コンポーネントマウント時に1回だけ実行
@@ -110,7 +110,7 @@ export default function Home() {
 
     try {
       // Validate the name exists by querying the suggest API for exact match
-      const res = await fetch(`/api/suggest?q=${encodeURIComponent(normalizedName)}`);
+      const res = await fetch(`/api/suggest?q=${encodeURIComponent(normalizedName)}&locale=${locale}`);
       if (!res.ok) {
         setError(t('errors.nameValidationFailed'));
         return;
@@ -141,22 +141,24 @@ export default function Home() {
   };
 
   const handleResultSelection = (res: ResultItem) => {
-    if (!res.name) return;
+    const displayName = locale === 'ja' ? (res.title_ja ?? res.name) : res.name;
+    if (!displayName) return;
     setQueryItems((prev: QueryItem[]) => {
-      if (prev.some((item: QueryItem) => item.name === res.name)) {
+      if (prev.some((item: QueryItem) => item.name === displayName)) {
         return prev;
       }
-      return [...prev, { name: res.name as string, weight: 1 }];
+      return [...prev, { name: displayName, weight: 1 }];
     });
   };
 
   const handleBlacklistAdd = (res: ResultItem) => {
     if (typeof res.id !== 'number') return;
+    const displayName = locale === 'ja' ? (res.title_ja ?? res.name) : res.name;
     setBlacklist((prev: BlacklistEntry[]) => {
       if (prev.some((entry) => entry.id === res.id)) {
         return prev;
       }
-      return [...prev, { id: res.id, name: res.name }];
+      return [...prev, { id: res.id, name: displayName }];
     });
   };
 
@@ -183,7 +185,7 @@ export default function Home() {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: queryItems, blacklistIds }),
+        body: JSON.stringify({ items: queryItems, blacklistIds, locale }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -295,10 +297,14 @@ export default function Home() {
   };
 
   const selectedNames = new Set(queryItems.map((item: QueryItem) => item.name));
+  const getDisplayName = (res: ResultItem) => (locale === 'ja' ? (res.title_ja ?? res.name) : res.name);
   const blacklistIdSet = new Set(blacklist.map((entry: BlacklistEntry) => entry.id));
   const visibleResults = results
     .filter((res: ResultItem) => !blacklistIdSet.has(res.id))
-    .filter((res: ResultItem) => !res.name || !selectedNames.has(res.name))
+    .filter((res: ResultItem) => {
+      const displayName = getDisplayName(res);
+      return !displayName || !selectedNames.has(displayName);
+    })
     .slice(0, 10);
 
   // --- Groq Explain: send ranking + names/scores to /api/groq ---
@@ -315,7 +321,7 @@ export default function Home() {
     try {
       const payload = {
         locale,
-        rankings: visibleResults.map((r) => ({ name: r.name ?? String(r.id), score: r.score })),
+        rankings: visibleResults.map((r) => ({ name: getDisplayName(r) ?? String(r.id), score: r.score })),
         favoriteMovies: queryItems.map((q) => q.name),
         provider,
         model,
@@ -528,13 +534,13 @@ export default function Home() {
                     <tr key={res.id} className="border-b border-slate-100">
                       <td className="px-3 py-3 text-sm font-semibold text-slate-700">{idx + 1}</td>
                       <td className="px-3 py-3">
-                        {res.name ? (
+                        {getDisplayName(res) ? (
                           <div className="flex flex-col items-start">
                             <button
                               onClick={() => handleResultSelection(res)}
                               className="text-left text-base font-semibold text-sky-600 transition hover:text-sky-700"
                             >
-                              {res.name}
+                              {getDisplayName(res)}
                             </button>
                             {typeof res.ranking === 'number' ? (
                               <span className="text-xs text-slate-500">#{res.ranking}</span>

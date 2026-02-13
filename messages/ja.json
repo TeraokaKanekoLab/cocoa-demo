@@ -15,7 +15,7 @@
       "excludedMovies": "除外した映画"
     },
     "placeholders": {
-      "movieName": "映画名を入力（例: Matrix）...",
+      "movieName": "映画名を入力（例: マトリックス）...",
       "aiPanel": "「AIで説明」を押すとランキングを送信し、分析結果を受け取ります。"
     },
     "buttons": {
