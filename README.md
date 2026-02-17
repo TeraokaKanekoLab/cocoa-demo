@@ -1,6 +1,8 @@
 # cocoa-demo
 
-English README — Graph Analysis Demo Application
+Graph Analysis Demo Application
+
+![Image](https://github.com/user-attachments/assets/0e9f8074-3913-4c70-9bcc-a3bb86e7553d)
 
 Overview
 ---
