@@ -182,6 +182,7 @@ export default function Home() {
       const timeoutMs = 30000; // 30秒
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+      const startTime = performance.now();
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -189,6 +190,8 @@ export default function Home() {
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      const duration = ((performance.now() - startTime) / 1000);
+      console.log(`Initial analysis request took ${duration} seconds`);
 
       // レスポンスをまずテキストで受け取り、JSONパースを安全に行う
       const text = await res.text();
@@ -235,6 +238,7 @@ export default function Home() {
       const timeoutMs = 30000;
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+      const startTime = performance.now();
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -242,6 +246,8 @@ export default function Home() {
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      const duration = ((performance.now() - startTime) / 1000);
+      console.log(`Adjust request with c=${cToSend} took ${duration} seconds`);
 
       const text = await res.text();
       if (!res.ok) {
@@ -327,11 +333,14 @@ export default function Home() {
         model,
       };
 
+      const startTime = performance.now();
       const res = await fetch('/api/groq', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      const duration = ((performance.now() - startTime) / 1000)
+      console.log(`Groq explain request took ${duration} seconds`);
 
       const text = await res.text();
       if (!res.ok) {
