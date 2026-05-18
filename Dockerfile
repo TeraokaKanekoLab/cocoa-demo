@@ -17,8 +17,6 @@ WORKDIR /app
 # 2. 依存関係のインストール (SQLiteドライバ含む)
 COPY package*.json ./
 RUN npm install
-RUN npm install sqlite3 sqlite
-RUN npm install openai
 
 # 3. ソースコードコピー
 COPY . .
