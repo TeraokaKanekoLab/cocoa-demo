@@ -34,6 +34,8 @@ export async function POST(req: Request) {
     const locale = typeof body?.locale === 'string' ? body.locale : 'en';
     const provider: Provider = body?.provider === 'groq' ? 'groq' : 'openai';
     const requestedModel: ModelChoice | undefined = body?.model;
+    const useStreaming = body?.stream !== false;
+    const debugStream = body?.debugStream === true;
 
     if (!rankings || rankings.length === 0) {
       return NextResponse.json({ error: 'No rankings provided' }, { status: 400 });
@@ -81,6 +83,38 @@ export async function POST(req: Request) {
   </ul>
 </div>
 `;
+      if (useStreaming) {
+        const encoder = new TextEncoder();
+        const mockChunks = analysisHtml.match(/.{1,48}/g) ?? [];
+        const stream = new ReadableStream({
+          async start(controller) {
+            let totalDeltaChars = 0;
+            for (let i = 0; i < mockChunks.length; i += 1) {
+              const delta = mockChunks[i] ?? '';
+              if (!delta) continue;
+              totalDeltaChars += delta.length;
+              if (debugStream) {
+                console.debug('[groq-stream] mock delta', { chunkCount: i + 1, deltaChars: delta.length });
+              }
+              controller.enqueue(
+                encoder.encode(JSON.stringify({ type: 'delta', delta, chunkCount: i + 1, totalDeltaChars }) + '\n'),
+              );
+              await new Promise((resolve) => setTimeout(resolve, 20));
+            }
+            controller.enqueue(
+              encoder.encode(JSON.stringify({ type: 'done', chunkCount: mockChunks.length, totalDeltaChars }) + '\n'),
+            );
+            controller.close();
+          },
+        });
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'application/x-ndjson; charset=utf-8',
+            'Cache-Control': 'no-cache, no-transform',
+            Connection: 'keep-alive',
+          },
+        });
+      }
       return NextResponse.json({ analysis: analysisHtml });
     }
 
@@ -101,6 +135,70 @@ export async function POST(req: Request) {
     });
 
     // Use chat completions for broader compatibility (Groq does not yet support /responses)
+    if (useStreaming) {
+      const streamResp = await client.chat.completions.create({
+        model: resolvedModel,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true,
+      });
+      const encoder = new TextEncoder();
+      const startedAt = Date.now();
+      let chunkCount = 0;
+      let totalDeltaChars = 0;
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of streamResp) {
+              const delta = chunk?.choices?.[0]?.delta?.content ?? '';
+              if (!delta) continue;
+              chunkCount += 1;
+              totalDeltaChars += delta.length;
+              if (debugStream) {
+                console.debug('[groq-stream] delta', {
+                  provider,
+                  model: resolvedModel,
+                  chunkCount,
+                  deltaChars: delta.length,
+                  totalDeltaChars,
+                });
+              }
+              controller.enqueue(
+                encoder.encode(JSON.stringify({ type: 'delta', delta, chunkCount, totalDeltaChars }) + '\n'),
+              );
+            }
+            const elapsedMs = Date.now() - startedAt;
+            if (debugStream) {
+              console.debug('[groq-stream] done', {
+                provider,
+                model: resolvedModel,
+                chunkCount,
+                totalDeltaChars,
+                elapsedMs,
+              });
+            }
+            controller.enqueue(
+              encoder.encode(JSON.stringify({ type: 'done', chunkCount, totalDeltaChars, elapsedMs }) + '\n'),
+            );
+          } catch (streamError: any) {
+            const message = streamError?.message || 'Streaming failed';
+            console.error('Streaming API Error:', message);
+            controller.enqueue(encoder.encode(JSON.stringify({ type: 'error', message }) + '\n'));
+          } finally {
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'application/x-ndjson; charset=utf-8',
+          'Cache-Control': 'no-cache, no-transform',
+          Connection: 'keep-alive',
+        },
+      });
+    }
+
     const chatResp = await client.chat.completions.create({
       model: resolvedModel,
       messages: [{ role: 'user', content: prompt }],

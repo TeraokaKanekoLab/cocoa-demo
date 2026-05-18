@@ -323,6 +323,7 @@ export default function Home() {
     const [providerRaw, modelRaw] = aiSelection.split(':');
     const provider = providerRaw || 'openai';
     const model = modelRaw || 'gpt-5-mini';
+    const debugStream = process.env.NODE_ENV !== 'production';
 
     try {
       const payload = {
@@ -331,6 +332,8 @@ export default function Home() {
         favoriteMovies: queryItems.map((q) => q.name),
         provider,
         model,
+        stream: true,
+        debugStream,
       };
 
       const startTime = performance.now();
@@ -342,13 +345,60 @@ export default function Home() {
       const duration = ((performance.now() - startTime) / 1000)
       console.log(`Groq explain request took ${duration} seconds`);
 
-      const text = await res.text();
+      const contentType = res.headers.get('content-type') || '';
+      const isStreamResponse = contentType.includes('application/x-ndjson') && !!res.body;
       if (!res.ok) {
+        const text = await res.text();
         setGroqError(t('errors.serverError', { status: res.status, text }));
+      } else if (isStreamResponse) {
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffered = '';
+        let streamedOutput = '';
+        let finished = false;
+
+        while (!finished) {
+          const { done, value } = await reader.read();
+          if (done) {
+            finished = true;
+            buffered += decoder.decode();
+          } else {
+            buffered += decoder.decode(value, { stream: true });
+          }
+
+          const lines = buffered.split('\n');
+          buffered = lines.pop() ?? '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            try {
+              const evt = JSON.parse(trimmed);
+              if (evt?.type === 'delta' && typeof evt.delta === 'string') {
+                streamedOutput += evt.delta;
+                setGroqOutput(streamedOutput);
+                if (debugStream) {
+                  console.debug('[groq-stream] client delta', {
+                    chunkCount: evt.chunkCount,
+                    totalDeltaChars: evt.totalDeltaChars,
+                  });
+                }
+              } else if (evt?.type === 'done') {
+                if (debugStream) {
+                  console.debug('[groq-stream] client done', evt);
+                }
+              } else if (evt?.type === 'error' && typeof evt.message === 'string') {
+                setGroqError(evt.message);
+              }
+            } catch {
+              // ignore malformed line and continue
+            }
+          }
+        }
       } else {
+        const text = await res.text();
         try {
           const data = JSON.parse(text);
-          // expect { analysis: '...' }
           if (data && data.analysis) {
             setGroqOutput(String(data.analysis));
           } else if (typeof data === 'string') {
@@ -356,8 +406,7 @@ export default function Home() {
           } else {
             setGroqOutput(JSON.stringify(data, null, 2));
           }
-        } catch (e) {
-          // not JSON
+        } catch {
           setGroqOutput(text);
         }
       }
