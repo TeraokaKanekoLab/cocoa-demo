@@ -183,8 +183,13 @@ export async function POST(req: Request) {
             controller.enqueue(
               encoder.encode(JSON.stringify({ type: 'done', chunkCount, totalDeltaChars, elapsedMs }) + '\n'),
             );
-          } catch (streamError: any) {
-            const message = streamError?.message || 'Streaming failed';
+          } catch (streamError: unknown) {
+            const message =
+              streamError instanceof Error
+                ? streamError.message
+                : typeof streamError === 'string'
+                  ? streamError
+                  : 'Streaming failed';
             console.error('Streaming API Error:', message);
             controller.enqueue(encoder.encode(JSON.stringify({ type: 'error', message }) + '\n'));
           } finally {
