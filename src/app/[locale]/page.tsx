@@ -10,6 +10,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 type QueryItem = { name: string; weight: number };
 type ResultItem = { id: number; score: number; name?: string; title_ja?: string | null; ranking?: number | null };
 type BlacklistEntry = { id: number; name?: string };
+const MARKDOWN_LIST_COLOR_CLASSES = '[&>li:nth-child(1)]:text-indigo-700 [&>li:nth-child(2)]:text-teal-700 [&>li:nth-child(3)]:text-sky-700';
 
 export default function Home() {
   const t = useTranslations('Home');
@@ -405,7 +406,6 @@ export default function Home() {
     'h-10 rounded-lg px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60',
     isAddDisabled ? 'bg-sky-400' : 'bg-sky-600 hover:bg-sky-700',
   ].join(' ');
-  const markdownListColorClasses = '[&>li:nth-child(1)]:text-indigo-700 [&>li:nth-child(2)]:text-teal-700 [&>li:nth-child(3)]:text-sky-700';
   const runAnalysisButtonClass = [
     'rounded-lg px-6 py-2 text-white transition disabled:cursor-not-allowed disabled:opacity-70',
     !serverReady ? 'bg-slate-400' : loading ? 'bg-lime-600' : 'bg-emerald-500 hover:bg-emerald-600',
@@ -667,13 +667,13 @@ export default function Home() {
                     p: ({ node, ...props }) => <p className="mt-2 leading-relaxed first:mt-0" {...props} />,
                     ul: ({ node, ...props }) => (
                         <ul
-                        className={`my-2 list-disc space-y-1 pl-6 ${markdownListColorClasses}`}
+                        className={'my-2 list-disc space-y-1 pl-6 ' + MARKDOWN_LIST_COLOR_CLASSES}
                         {...props}
                       />
                     ),
                     ol: ({ node, ...props }) => (
                       <ol
-                        className={`my-2 list-decimal space-y-1 pl-6 ${markdownListColorClasses}`}
+                        className={'my-2 list-decimal space-y-1 pl-6 ' + MARKDOWN_LIST_COLOR_CLASSES}
                         {...props}
                       />
                     ),
