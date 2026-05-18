@@ -14,11 +14,11 @@ const MARKDOWN_LIST_COLOR_CLASSES = '[&>li:nth-child(1)]:text-indigo-700 [&>li:n
 
 // セクション別テーマカラー定義（見出し、スコア、タイトル用）
 const SECTION_THEME_COLORS = [
-  { text: 'text-indigo-700', bg: 'bg-indigo-100' },
-  { text: 'text-teal-700', bg: 'bg-teal-100' },
-  { text: 'text-rose-700', bg: 'bg-rose-100' },
-  { text: 'text-orange-700', bg: 'bg-orange-100' },
-  { text: 'text-violet-700', bg: 'bg-violet-100' },
+  { text: 'text-indigo-700', bg: 'bg-indigo-100', border: 'border-indigo-500' },
+  { text: 'text-teal-700', bg: 'bg-teal-100', border: 'border-teal-500' },
+  { text: 'text-rose-700', bg: 'bg-rose-100', border: 'border-rose-500' },
+  { text: 'text-orange-700', bg: 'bg-orange-100', border: 'border-orange-500' },
+  { text: 'text-violet-700', bg: 'bg-violet-100', border: 'border-violet-500' },
 ];
 
 export default function Home() {
@@ -679,26 +679,20 @@ export default function Home() {
               {groqOutput ? (
                 <ReactMarkdown
                   components={{
-                    h3: ({ node, children, ...props }) => {
-                      // 現在のセクション色を取得
+                    h2: ({ node, children, ...props }) => {
                       const currentColor = SECTION_THEME_COLORS[sectionColorIndexRef.current % SECTION_THEME_COLORS.length];
-                      // 次のセクションのためにインクリメント
+                      const borderColorClass = currentColor.border;
+                      /* 次のセクションのためにインクリメント */
                       sectionColorIndexRef.current += 1;
-                      return <h3 className={`mt-4 text-base font-semibold ${currentColor.text} first:mt-0`} {...props}>{children}</h3>;
+                      return <h3 className={`text-base font-bold text-gray-800 mb-3 flex items-center border-l-4 ${borderColorClass} pl-2`} {...props}>{children}</h3>;
+                    },
+                    h3: ({ node, children, ...props }) => {
+                      const textColor = SECTION_THEME_COLORS[Math.max(0, sectionColorIndexRef.current - 1) % SECTION_THEME_COLORS.length].text;
+                      return <div className={`font-bold ${textColor} text-base`} {...props}>{children}</div>;
                     },
                     h4: ({ node, ...props }) => <h4 className="mt-3 text-sm font-semibold text-indigo-800 first:mt-0" {...props} />,
                     p: ({ node, children, ...props }) => {
-                      // テキストノードをチェック（Score:を含むかどうか）
-                      const childrenText = children ? String(children) : '';
-                      const hasScore = childrenText.includes('Score:');
-                      
-                      if (hasScore && sectionColorIndexRef.current > 0) {
-                        // スコア行：前のセクション色を使用
-                        const scoreColor = SECTION_THEME_COLORS[(sectionColorIndexRef.current - 1) % SECTION_THEME_COLORS.length];
-                        return <p className={`mt-2 leading-relaxed first:mt-0 font-medium ${scoreColor.text}`} {...props}>{children}</p>;
-                      }
-                      
-                      return <p className="mt-2 leading-relaxed first:mt-0" {...props}>{children}</p>;
+                      return <p className="mt-2 leading-relaxed first:mt-0 space-y-3 mb-4" {...props}>{children}</p>;
                     },
                     ul: ({ node, ...props }) => (
                         <ul
@@ -713,14 +707,32 @@ export default function Home() {
                       />
                     ),
                     li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
-                    strong: ({ node, ...props }) => {
-                      // 太字（映画タイトル等）：前のセクション色を使用
+                    strong: ({ node, children, ...props }) => {
+                      /* 太字（映画タイトル等）：親セクション色を使用 */
                       if (sectionColorIndexRef.current > 0) {
                         const titleColor = SECTION_THEME_COLORS[(sectionColorIndexRef.current - 1) % SECTION_THEME_COLORS.length];
-                        return <strong className={`font-semibold ${titleColor.text}`} {...props} />;
+                        return <strong className={`font-semibold ${titleColor.text}`} {...props}>{children}</strong>;
                       }
-                      return <strong className="font-semibold text-slate-900" {...props} />;
+                      return <strong className="font-semibold text-slate-900" {...props}>{children}</strong>;
                     },
+                    hr: ({ node, ...props }) => <hr className="h-px my-8 bg-gray-500 border-0" {...props} />,
+                    code: ({ node, children, ...props }) => {
+                      /* コードフォーマット（スコア等）：親セクション色を変更して使用 */
+                      if (sectionColorIndexRef.current > 0) {
+                        const codeColor = SECTION_THEME_COLORS[(sectionColorIndexRef.current - 1) % SECTION_THEME_COLORS.length];
+                        const textColor = codeColor.text.replace('700', '800');
+                        const bgColor = codeColor.bg.replace('100', '50');
+                        const borderColor = codeColor.border.replace('500', '100');
+                        return (
+                          <span
+                            className={`${bgColor} ${textColor} text-xs px-2 py-1 rounded border ${borderColor} font-mono`}
+                            {...props}
+                          >
+                            {children}
+                          </span>
+                        );
+                      }
+                    }
                   }}
                 >
                   {groqOutput}
