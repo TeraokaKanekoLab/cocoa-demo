@@ -12,6 +12,15 @@ type ResultItem = { id: number; score: number; name?: string; title_ja?: string 
 type BlacklistEntry = { id: number; name?: string };
 const MARKDOWN_LIST_COLOR_CLASSES = '[&>li:nth-child(1)]:text-indigo-700 [&>li:nth-child(2)]:text-teal-700 [&>li:nth-child(3)]:text-sky-700';
 
+// セクション別テーマカラー定義（見出し、スコア、タイトル用）
+const SECTION_THEME_COLORS = [
+  { text: 'text-indigo-700', bg: 'bg-indigo-100' },
+  { text: 'text-teal-700', bg: 'bg-teal-100' },
+  { text: 'text-rose-700', bg: 'bg-rose-100' },
+  { text: 'text-orange-700', bg: 'bg-orange-100' },
+  { text: 'text-violet-700', bg: 'bg-violet-100' },
+];
+
 export default function Home() {
   const t = useTranslations('Home');
   const locale = useLocale();
@@ -52,6 +61,9 @@ export default function Home() {
   const [groqOutput, setGroqOutput] = useState('');
   const [aiSelection, setAiSelection] = useState<string>('groq:openai/gpt-oss-20b');
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
+  
+  // セクション追跡用のref（MovieAnalysisセクション内の見出し数をカウント）
+  const sectionColorIndexRef = useRef(0);
 
   // --- サジェスト機能 ---
   useEffect(() => {
@@ -94,6 +106,11 @@ export default function Home() {
 
     void waitForServer();
   }, []); // 依存配列は空
+
+  // groqOutputが更新されたときにセクション追跡をリセット
+  useEffect(() => {
+    sectionColorIndexRef.current = 0;
+  }, [groqOutput]);
 
   // --- ハンドラ ---
 
@@ -662,9 +679,27 @@ export default function Home() {
               {groqOutput ? (
                 <ReactMarkdown
                   components={{
-                    h3: ({ node, ...props }) => <h3 className="mt-4 text-base font-semibold text-indigo-900 first:mt-0" {...props} />,
+                    h3: ({ node, children, ...props }) => {
+                      // 現在のセクション色を取得
+                      const currentColor = SECTION_THEME_COLORS[sectionColorIndexRef.current % SECTION_THEME_COLORS.length];
+                      // 次のセクションのためにインクリメント
+                      sectionColorIndexRef.current += 1;
+                      return <h3 className={`mt-4 text-base font-semibold ${currentColor.text} first:mt-0`} {...props}>{children}</h3>;
+                    },
                     h4: ({ node, ...props }) => <h4 className="mt-3 text-sm font-semibold text-indigo-800 first:mt-0" {...props} />,
-                    p: ({ node, ...props }) => <p className="mt-2 leading-relaxed first:mt-0" {...props} />,
+                    p: ({ node, children, ...props }) => {
+                      // テキストノードをチェック（Score:を含むかどうか）
+                      const childrenText = children ? String(children) : '';
+                      const hasScore = childrenText.includes('Score:');
+                      
+                      if (hasScore && sectionColorIndexRef.current > 0) {
+                        // スコア行：前のセクション色を使用
+                        const scoreColor = SECTION_THEME_COLORS[(sectionColorIndexRef.current - 1) % SECTION_THEME_COLORS.length];
+                        return <p className={`mt-2 leading-relaxed first:mt-0 font-medium ${scoreColor.text}`} {...props}>{children}</p>;
+                      }
+                      
+                      return <p className="mt-2 leading-relaxed first:mt-0" {...props}>{children}</p>;
+                    },
                     ul: ({ node, ...props }) => (
                         <ul
                         className={'my-2 list-disc space-y-1 pl-6 ' + MARKDOWN_LIST_COLOR_CLASSES}
@@ -678,7 +713,14 @@ export default function Home() {
                       />
                     ),
                     li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
-                    strong: ({ node, ...props }) => <strong className="font-semibold text-slate-900" {...props} />,
+                    strong: ({ node, ...props }) => {
+                      // 太字（映画タイトル等）：前のセクション色を使用
+                      if (sectionColorIndexRef.current > 0) {
+                        const titleColor = SECTION_THEME_COLORS[(sectionColorIndexRef.current - 1) % SECTION_THEME_COLORS.length];
+                        return <strong className={`font-semibold ${titleColor.text}`} {...props} />;
+                      }
+                      return <strong className="font-semibold text-slate-900" {...props} />;
+                    },
                   }}
                 >
                   {groqOutput}
