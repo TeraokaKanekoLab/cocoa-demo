@@ -42,5 +42,5 @@ ${favoriteText}
 Recommendation List:
 ${rankingText}
 
-Generate Markdown only:`;
+Generate Markdown only.`;
 }

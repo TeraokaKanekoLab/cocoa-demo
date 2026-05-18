@@ -42,5 +42,5 @@ ${favoriteText}
 推薦ランキング:
 ${rankingText}
 
-Markdownのみを生成してください:`;
+Markdownのみを生成してください。`;
 }
