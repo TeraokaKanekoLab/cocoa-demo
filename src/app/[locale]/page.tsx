@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import ReactMarkdown from 'react-markdown';
 
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
@@ -342,23 +343,51 @@ export default function Home() {
       const duration = ((performance.now() - startTime) / 1000)
       console.log(`Groq explain request took ${duration} seconds`);
 
-      const text = await res.text();
       if (!res.ok) {
+        const text = await res.text();
         setGroqError(t('errors.serverError', { status: res.status, text }));
+      } else if (!res.body) {
+        setGroqError(t('errors.networkError'));
       } else {
-        try {
-          const data = JSON.parse(text);
-          // expect { analysis: '...' }
-          if (data && data.analysis) {
-            setGroqOutput(String(data.analysis));
-          } else if (typeof data === 'string') {
-            setGroqOutput(data);
-          } else {
-            setGroqOutput(JSON.stringify(data, null, 2));
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        const handleSsePayload = (payloadText: string) => {
+          try {
+            const payload = JSON.parse(payloadText);
+            if (payload?.error) {
+              setGroqError(String(payload.error));
+              return;
+            }
+            if (typeof payload?.delta === 'string') {
+              setGroqOutput((prev) => prev + payload.delta);
+            }
+          } catch (e) {
+            console.error('Failed to parse SSE payload', e);
           }
-        } catch (e) {
-          // not JSON
-          setGroqOutput(text);
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const chunks = buffer.split('\n\n');
+          buffer = chunks.pop() ?? '';
+
+          for (const chunk of chunks) {
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                handleSsePayload(line.slice(6));
+              }
+            }
+          }
+        }
+
+        if (buffer.startsWith('data: ')) {
+          handleSsePayload(buffer.slice(6));
         }
       }
     } catch (e) {
@@ -627,12 +656,35 @@ export default function Home() {
           <div className="mt-4">
             <h4 className="text-base font-semibold">{t('labels.aiAnalysis')}</h4>
             {groqError && <div className="mt-2 text-sm text-rose-600">{groqError}</div>}
-            <div
-              className="mt-2 min-h-20 rounded-lg bg-indigo-50 p-4 text-sm leading-relaxed text-slate-800"
-              dangerouslySetInnerHTML={{
-                __html: groqOutput || `<p>${t('placeholders.aiPanel')}</p>`,
-              }}
-            />
+            <div className="mt-2 min-h-20 rounded-lg bg-indigo-50 p-4 text-sm leading-relaxed text-slate-800">
+              {groqOutput ? (
+                <ReactMarkdown
+                  components={{
+                    h3: ({ node, ...props }) => <h3 className="mt-4 text-base font-semibold text-indigo-900 first:mt-0" {...props} />,
+                    h4: ({ node, ...props }) => <h4 className="mt-3 text-sm font-semibold text-indigo-800 first:mt-0" {...props} />,
+                    p: ({ node, ...props }) => <p className="mt-2 leading-relaxed first:mt-0" {...props} />,
+                    ul: ({ node, ...props }) => (
+                      <ul
+                        className="my-2 list-disc space-y-1 pl-6 [&>li:nth-child(1)]:text-indigo-700 [&>li:nth-child(2)]:text-teal-700 [&>li:nth-child(3)]:text-sky-700"
+                        {...props}
+                      />
+                    ),
+                    ol: ({ node, ...props }) => (
+                      <ol
+                        className="my-2 list-decimal space-y-1 pl-6 [&>li:nth-child(1)]:text-indigo-700 [&>li:nth-child(2)]:text-teal-700 [&>li:nth-child(3)]:text-sky-700"
+                        {...props}
+                      />
+                    ),
+                    li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
+                    strong: ({ node, ...props }) => <strong className="font-semibold text-slate-900" {...props} />,
+                  }}
+                >
+                  {groqOutput}
+                </ReactMarkdown>
+              ) : (
+                <p>{t('placeholders.aiPanel')}</p>
+              )}
+            </div>
           </div>
         </div>
       )}
