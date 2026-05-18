@@ -6,6 +6,23 @@ import { buildMovieAnalysisPrompt } from '@/lib/prompts/movieAnalysis';
 type Ranking = { name: string; score: number };
 const MOCK_STREAM_CHUNK_SIZE = 48;
 const MOCK_STREAM_CHUNK_DELAY_MS = 20;
+type StreamDeltaEvent = { type: 'delta'; delta: string; chunkCount: number; totalDeltaChars: number };
+type StreamDoneEvent = { type: 'done'; chunkCount: number; totalDeltaChars: number; elapsedMs?: number };
+type StreamErrorEvent = { type: 'error'; message: string };
+
+const toDeltaEvent = (delta: string, chunkCount: number, totalDeltaChars: number): StreamDeltaEvent => ({
+  type: 'delta',
+  delta,
+  chunkCount,
+  totalDeltaChars,
+});
+const toDoneEvent = (chunkCount: number, totalDeltaChars: number, elapsedMs?: number): StreamDoneEvent => ({
+  type: 'done',
+  chunkCount,
+  totalDeltaChars,
+  elapsedMs,
+});
+const toErrorEvent = (message: string): StreamErrorEvent => ({ type: 'error', message });
 
 // basic HTML escaper to avoid injecting broken HTML from input names
 const escapeHtml = (s: any) => {
@@ -100,12 +117,12 @@ export async function POST(req: Request) {
                 console.debug('[groq-stream] mock delta', { chunkCount: i + 1, deltaChars: delta.length });
               }
               controller.enqueue(
-                encoder.encode(JSON.stringify({ type: 'delta', delta, chunkCount: i + 1, totalDeltaChars }) + '\n'),
+                encoder.encode(JSON.stringify(toDeltaEvent(delta, i + 1, totalDeltaChars)) + '\n'),
               );
               await new Promise((resolve) => setTimeout(resolve, MOCK_STREAM_CHUNK_DELAY_MS));
             }
             controller.enqueue(
-              encoder.encode(JSON.stringify({ type: 'done', chunkCount: mockChunks.length, totalDeltaChars }) + '\n'),
+              encoder.encode(JSON.stringify(toDoneEvent(mockChunks.length, totalDeltaChars)) + '\n'),
             );
             controller.close();
           },
@@ -167,7 +184,7 @@ export async function POST(req: Request) {
                 });
               }
               controller.enqueue(
-                encoder.encode(JSON.stringify({ type: 'delta', delta, chunkCount, totalDeltaChars }) + '\n'),
+                encoder.encode(JSON.stringify(toDeltaEvent(delta, chunkCount, totalDeltaChars)) + '\n'),
               );
             }
             const elapsedMs = Date.now() - startedAt;
@@ -181,7 +198,7 @@ export async function POST(req: Request) {
               });
             }
             controller.enqueue(
-              encoder.encode(JSON.stringify({ type: 'done', chunkCount, totalDeltaChars, elapsedMs }) + '\n'),
+              encoder.encode(JSON.stringify(toDoneEvent(chunkCount, totalDeltaChars, elapsedMs)) + '\n'),
             );
           } catch (streamError: unknown) {
             const message =
@@ -191,7 +208,7 @@ export async function POST(req: Request) {
                   ? streamError
                   : 'Streaming failed';
             console.error('Streaming API Error:', message);
-            controller.enqueue(encoder.encode(JSON.stringify({ type: 'error', message }) + '\n'));
+            controller.enqueue(encoder.encode(JSON.stringify(toErrorEvent(message)) + '\n'));
           } finally {
             controller.close();
           }

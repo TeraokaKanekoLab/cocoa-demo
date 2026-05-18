@@ -323,7 +323,7 @@ export default function Home() {
     const [providerRaw, modelRaw] = aiSelection.split(':');
     const provider = providerRaw || 'openai';
     const model = modelRaw || 'gpt-5-mini';
-    const isStreamDebugEnabled = process.env.NODE_ENV !== 'production';
+    const debugStream = process.env.NODE_ENV !== 'production';
 
     try {
       const payload = {
@@ -333,7 +333,7 @@ export default function Home() {
         provider,
         model,
         stream: true,
-        debugStream: isStreamDebugEnabled,
+        debugStream,
       };
 
       const startTime = performance.now();
@@ -377,14 +377,14 @@ export default function Home() {
               if (evt?.type === 'delta' && typeof evt.delta === 'string') {
                 streamedOutput += evt.delta;
                 setGroqOutput(streamedOutput);
-                if (isStreamDebugEnabled) {
+                if (debugStream) {
                   console.debug('[groq-stream] client delta', {
                     chunkCount: evt.chunkCount,
                     totalDeltaChars: evt.totalDeltaChars,
                   });
                 }
               } else if (evt?.type === 'done') {
-                if (isStreamDebugEnabled) {
+                if (debugStream) {
                   console.debug('[groq-stream] client done', evt);
                 }
               } else if (evt?.type === 'error' && typeof evt.message === 'string') {
