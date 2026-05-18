@@ -4,6 +4,8 @@ import { OpenAI } from 'openai'
 import { buildMovieAnalysisPrompt } from '@/lib/prompts/movieAnalysis';
 
 type Ranking = { name: string; score: number };
+const escapeMarkdown = (value: string) =>
+  value.replace(/\\/g, '\\\\').replace(/([`*_{}\[\]()#+\-.!|>])/g, '\\$1');
 
 type Provider = 'openai' | 'groq';
 type ModelChoice =
@@ -55,11 +57,11 @@ export async function POST(req: Request) {
       const avg = rankings.reduce((s, r) => s + (Number.isFinite(r.score) ? r.score : 0), 0) / rankings.length;
       const highest = rankings[0];
       const topListMarkdown = topItems
-        .map((r, i) => `${i + 1}. ${String(r.name)} (score: ${Number.isFinite(r.score) ? r.score.toFixed(4) : r.score})`)
+        .map((r, i) => `${i + 1}. ${escapeMarkdown(String(r.name))} (score: ${Number.isFinite(r.score) ? r.score.toFixed(4) : r.score})`)
         .join('\n');
       const analysisMarkdown = [
         '### Summary',
-        `The ranking highlights the top ${topN} items; the top item is **${String(highest.name)}** with score ${Number.isFinite(highest.score) ? highest.score.toFixed(4) : highest.score}.`,
+        `The ranking highlights the top ${topN} items; the top item is **${escapeMarkdown(String(highest.name))}** with score ${Number.isFinite(highest.score) ? highest.score.toFixed(4) : highest.score}.`,
         '',
         `### Top ${topN}`,
         topListMarkdown,
@@ -125,7 +127,7 @@ export async function POST(req: Request) {
           }
           sendEvent({ done: true });
         } catch (error: any) {
-          const message = error?.error?.message || error?.message || 'Streaming failed';
+          const message = error?.error?.message || error?.message || `Streaming failed during ${provider}:${resolvedModel}`;
           sendEvent({ error: message });
         } finally {
           controller.close();

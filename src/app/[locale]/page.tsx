@@ -364,7 +364,7 @@ export default function Home() {
               setGroqOutput((prev) => prev + payload.delta);
             }
           } catch (e) {
-            console.error('Failed to parse SSE payload', e);
+            console.error('Failed to parse SSE payload', { payloadText, error: e });
           }
         };
 
