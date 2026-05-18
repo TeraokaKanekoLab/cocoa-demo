@@ -4,6 +4,8 @@ import { OpenAI } from 'openai'
 import { buildMovieAnalysisPrompt } from '@/lib/prompts/movieAnalysis';
 
 type Ranking = { name: string; score: number };
+const MOCK_STREAM_CHUNK_SIZE = 48;
+const MOCK_STREAM_CHUNK_DELAY_MS = 20;
 
 // basic HTML escaper to avoid injecting broken HTML from input names
 const escapeHtml = (s: any) => {
@@ -85,7 +87,8 @@ export async function POST(req: Request) {
 `;
       if (useStreaming) {
         const encoder = new TextEncoder();
-        const mockChunks = analysisHtml.match(/.{1,48}/g) ?? [];
+        const mockChunkPattern = new RegExp(`.{1,${MOCK_STREAM_CHUNK_SIZE}}`, 'g');
+        const mockChunks = analysisHtml.match(mockChunkPattern) ?? [];
         const stream = new ReadableStream({
           async start(controller) {
             let totalDeltaChars = 0;
@@ -99,7 +102,7 @@ export async function POST(req: Request) {
               controller.enqueue(
                 encoder.encode(JSON.stringify({ type: 'delta', delta, chunkCount: i + 1, totalDeltaChars }) + '\n'),
               );
-              await new Promise((resolve) => setTimeout(resolve, 20));
+              await new Promise((resolve) => setTimeout(resolve, MOCK_STREAM_CHUNK_DELAY_MS));
             }
             controller.enqueue(
               encoder.encode(JSON.stringify({ type: 'done', chunkCount: mockChunks.length, totalDeltaChars }) + '\n'),
