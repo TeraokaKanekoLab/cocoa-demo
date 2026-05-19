@@ -13,19 +13,34 @@ export async function GET(req: Request) {
   try {
     const db = await getDb();
     if (locale === 'ja') {
-      const suggestions = await db.all(
-        'SELECT COALESCE(title_ja, name) AS title FROM nodes WHERE COALESCE(title_ja, name) LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 10',
+      const prefixSuggestions = await db.all(
+        'SELECT COALESCE(title_ja, name) AS title FROM nodes WHERE COALESCE(title_ja, name) LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 11',
         `${query}%`
       );
-      return NextResponse.json(suggestions.map((s: any) => s.title));
+      if (prefixSuggestions.length > 10) {
+        return NextResponse.json(prefixSuggestions.slice(0, 10).map((s: any) => s.title));
+      }
+
+      const partialSuggestions = await db.all(
+        'SELECT COALESCE(title_ja, name) AS title FROM nodes WHERE COALESCE(title_ja, name) LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 10',
+        `%${query}%`
+      );
+      return NextResponse.json(partialSuggestions.map((s: any) => s.title));
     }
 
-    // 前方一致検索 (LIMIT 10 で件数を絞る)
-    const suggestions = await db.all(
-      'SELECT name FROM nodes WHERE name LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 10',
+    const prefixSuggestions = await db.all(
+      'SELECT name FROM nodes WHERE name LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 11',
       `${query}%`
     );
-    return NextResponse.json(suggestions.map((s: any) => s.name));
+    if (prefixSuggestions.length > 10) {
+      return NextResponse.json(prefixSuggestions.slice(0, 10).map((s: any) => s.name));
+    }
+
+    const partialSuggestions = await db.all(
+      'SELECT name FROM nodes WHERE name LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 10',
+      `%${query}%`
+    );
+    return NextResponse.json(partialSuggestions.map((s: any) => s.name));
   } catch (error) {
     console.error('Suggest Error:', error);
     return NextResponse.json([], { status: 500 });
