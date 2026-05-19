@@ -33,10 +33,10 @@ Explain the ranking logically based on user favorites and the given scores.
    - **Movie Items**:
      - **Title**: Movie title in bold and Heading 3 (\`### **Title**\`).
      - **Score**: Display the Score clearly with code formatting (\`\`\`Score: 0.XXXX\`\`\`).
-     - **Description**: A single paragraph combining:
-       1. **Overview**: Briefly explain what kind of movie it is.
-       2. **Score**: Mention the specific score value.
-       3. **Connection**: Explain *why* it fits by referencing **ONLY** the provided User Favorites.
+     - **Description**: Write a single paragraph (no line breaks/bullets) integrating:
+       - Movie title and brief premise.
+       - The score in **bold**, embedded naturally (e.g., "Scoring **0.0623**...").
+       - Why it matches the user, by referencing **ONLY** the provided User Favorites.
 2. **Summary Section**: A final section.
    - **Format**: Separated by a horizontal rule (\`---\`), titled with Heading 2 (\`## Summary\`).
    - **Content**: Summarize the user's detected preference and the recommendation strategy in 2-3 sentences.

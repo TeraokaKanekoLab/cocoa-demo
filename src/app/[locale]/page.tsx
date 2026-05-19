@@ -725,7 +725,7 @@ export default function Home() {
                         const borderColor = codeColor.border.replace('500', '100');
                         return (
                           <span
-                            className={`${bgColor} ${textColor} text-xs px-2 py-1 rounded border ${borderColor} font-mono`}
+                            className={`inline-block ${bgColor} ${textColor} text-xs px-2 py-1 rounded border ${borderColor} font-mono`}
                             {...props}
                           >
                             {children}
