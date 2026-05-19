@@ -4,17 +4,8 @@ import { OpenAI } from 'openai'
 import { buildMovieAnalysisPrompt } from '@/lib/prompts/movieAnalysis';
 
 type Ranking = { name: string; score: number };
-
-// basic HTML escaper to avoid injecting broken HTML from input names
-const escapeHtml = (s: any) => {
-  if (s === null || s === undefined) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-};
+const sanitizeForMarkdown = (value: string) =>
+  value.replace(/\\/g, '\\\\').replace(/([`*_{}\[\]()#+\-.!|>])/g, '\\$1');
 
 type Provider = 'openai' | 'groq';
 type ModelChoice =
@@ -63,25 +54,38 @@ export async function POST(req: Request) {
     if (provider === 'openai' && !OPENAI_API_KEY) {
       const topN = Math.min(5, rankings.length);
       const topItems = rankings.slice(0, topN);
-      const topListHtml = topItems.map((r, i) => `<li>${i + 1}. ${escapeHtml(r.name)} (score: ${Number.isFinite(r.score) ? r.score.toFixed(4) : r.score})</li>`).join('');
       const avg = rankings.reduce((s, r) => s + (Number.isFinite(r.score) ? r.score : 0), 0) / rankings.length;
       const highest = rankings[0];
-      const analysisHtml = `
-<div class="analysis">
-  <h4>Summary</h4>
-  <p>The ranking highlights the top ${topN} items; the top item is <b>${escapeHtml(highest.name)}</b> with score ${Number.isFinite(highest.score) ? highest.score.toFixed(4) : highest.score}.</p>
-  <h4>Top ${topN}</h4>
-  <ul>${topListHtml}</ul>
-  <h4>Statistics</h4>
-  <p>Average score: ${avg.toFixed(4)}</p>
-  <h4>Suggestions</h4>
-  <ul>
-    <li>Inspect metadata or keywords common to the top items.</li>
-    <li>Compare top items against the bottom-ranked items to find distinguishing features.</li>
-  </ul>
-</div>
-`;
-      return NextResponse.json({ analysis: analysisHtml });
+      const topListMarkdown = topItems
+        .map((r, i) => `${i + 1}. ${sanitizeForMarkdown(String(r.name))} (score: ${Number.isFinite(r.score) ? r.score.toFixed(4) : r.score})`)
+        .join('\n');
+      const analysisMarkdown = [
+        '### Summary',
+        `The ranking highlights the top ${topN} items; the top item is **${sanitizeForMarkdown(String(highest.name))}** with score ${Number.isFinite(highest.score) ? highest.score.toFixed(4) : highest.score}.`,
+        '',
+        `### Top ${topN}`,
+        topListMarkdown,
+        '',
+        '### Statistics',
+        `Average score: ${avg.toFixed(4)}`,
+        '',
+        '### Suggestions',
+        '- Inspect metadata or keywords common to the top items.',
+        '- Compare top items against the bottom-ranked items to find distinguishing features.',
+      ].join('\n');
+
+      return new NextResponse(
+        `data: ${JSON.stringify({ delta: analysisMarkdown })}\n\n` +
+        `data: ${JSON.stringify({ done: true })}\n\n`,
+        {
+          headers: {
+            'Content-Type': 'text/event-stream; charset=utf-8',
+            'Cache-Control': 'no-cache, no-transform',
+            Connection: 'keep-alive',
+            'X-Accel-Buffering': 'no',
+          },
+        }
+      );
     }
 
     if (!providerConfig.apiKey) {
@@ -100,14 +104,45 @@ export async function POST(req: Request) {
       rankings,
     });
 
-    // Use chat completions for broader compatibility (Groq does not yet support /responses)
-    const chatResp = await client.chat.completions.create({
-      model: resolvedModel,
-      messages: [{ role: 'user', content: prompt }],
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const sendEvent = (payload: Record<string, unknown>) => {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+        };
+
+        try {
+          // Use chat completions for broader compatibility (Groq does not yet support /responses)
+          const chatResp = await client.chat.completions.create({
+            model: resolvedModel,
+            messages: [{ role: 'user', content: prompt }],
+            stream: true,
+          });
+
+          for await (const chunk of chatResp) {
+            const delta = chunk?.choices?.[0]?.delta?.content;
+            if (typeof delta === 'string' && delta.length > 0) {
+              sendEvent({ delta });
+            }
+          }
+          sendEvent({ done: true });
+        } catch (error: any) {
+          const message = error?.error?.message || error?.message || `Streaming failed during ${provider}:${resolvedModel}`;
+          sendEvent({ error: message });
+        } finally {
+          controller.close();
+        }
+      },
     });
 
-    const analysisText = chatResp?.choices?.[0]?.message?.content ?? '';
-    return NextResponse.json({ analysis: analysisText, raw: chatResp });
+    return new NextResponse(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      },
+    });
 
   } catch (error: any) {
     console.error('API Error:', error?.message || error);

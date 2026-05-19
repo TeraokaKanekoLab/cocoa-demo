@@ -9,104 +9,74 @@ export function buildMovieAnalysisPromptJa(args: {
   const favoriteText = favoriteMovies.length > 0 ? favoriteMovies.map((m) => `「${m}」`).join('\n') : '（指定なし）';
   const rankingText = rankings.map((r) => `${r.name}: ${r.score}`).join('\n');
 
-  return `Act as a Movie Analyst.
-Your goal is to recommend movies based on user favorites, displayed in a constrained text box (vertical flow).
-You must explain the recommendation logically using the provided "Score".
+  return `あなたは映画推薦のプロのアナリストです。
+ユーザーのお気に入りリストと提供されたスコアに基づき、論理的にランキングを説明してください。
 
-# Inputs
-1. **User Favorites**: A list of movies the user loves.
-2. **Recommendation List**: A ranked list of movies to recommend (Score, Title).
+# 入力データ
+1. ユーザーのお気に入り (User Favorites)
+2. 推薦リスト (タイトル + スコア)
 
-# Output Format
-- Output **ONLY** a raw HTML snippet wrapped in a single \`<div>\`.
-- Do NOT use markdown code blocks.
-- **Language**: Japanese (Must be written in natural, professional Japanese).
-- **Layout**: Simple, vertical flow. No grids, no columns.
-- **CSS**: Tailwind CSS.
-- **Max Font Size**: Use classes equivalent to h3 or h4 (e.g., \`text-base\`, \`text-lg\`).
+# 出力ルール（厳守）
+- プレーンテキストの **Markdownのみ** を出力してください。
+- **HTMLタグは絶対に出力しないでください**（\`<div>\`、\`<p>\`、\`<ul>\`などは不可）。
+- 出力全体をMarkdownのコードブロック（\`\`\`）で囲まないでください。
+- 言語: 日本語。
 
-# Content Guidelines (Crucial)
-1. **Strict Reference Rule**: When explaining the connection, **ONLY refer to movies explicitly listed in the "User Favorites" input**. Do NOT hallucinate or mention movies that are not in the input list.
-2. **Title References**: Use the official English titles for all movies.
-3. **General Inference**: It is okay to infer general tastes (e.g., "You like suspense") based on the input, but do not name-drop unlisted films.
+# コンテンツルール
+1. 関連性を説明する際は、「ユーザーのお気に入り（User Favorites）」に記載されている映画のみ言及してください。
+2. リストにない映画については言及しないでください。
+3. 映画のタイトルは公式な邦題を使用してください。
 
-# Content Structure
-1. **Thematic Recommendations**: Group recommendations into 2-3 themes.
-   - **Theme Header**: Simple styling.
-   - **Movie Items**:
-     - **Title**: Movie title (\`font-bold\`).
-     - **Badge**: Display the Score clearly (\`font-mono\`).
-     - **Description**: A single paragraph combining:
-       1. **Overview**: Briefly explain what kind of movie it is.
-       2. **Score**: Mention the specific score value.
-       3. **Connection**: Explain *why* it fits by referencing **ONLY** the provided User Favorites.
-2. **Summary Section**: A final section titled "Summary".
-   - **Format**: A single paragraph.
-   - **Content**: Summarize the user's detected preference and the recommendation strategy in 2-3 sentences.
+# コンテンツ構造
+1. **テーマ別の推薦**: 推薦作品を2〜3のテーマに分類します。
+   - **テーマ見出し**: 見出し2（\`##\`）を使用します。
+   - **映画アイテム**:
+     - **タイトル**: 映画のタイトルを見出し3で太字（\`### **タイトル**\`）にします。
+     - **スコア**: スコアをコードフォーマットで表示します（\`\`\`Score: 0.XXXX\`\`\`）。
+     - **説明**: 以下の要素を統合し、改行や箇条書きを含まない1つの段落で記述してください。
+       - 映画のタイトルと簡潔なあらすじ。
+       - 自然な文脈で組み込まれた太字のスコア（例：「スコア0.0623を記録し…」）。
+       - 提供された「ユーザーのお気に入り（User Favorites）」のみを参照した、その映画がユーザーに適している理由。
+2. **要約セクション**: 最後のセクション。
+   - **フォーマット**: 水平線（\`---\`）で区切り、見出し2（\`## まとめ\`）を使用します。
+   - **内容**: 分析されたユーザーの好みと推薦戦略を2〜3文で要約します。
 
-Note: Since the output language is Japanese, you may label the summary section in Japanese (e.g., "まとめ").
+# One-Shot Example (出力例)
 
-# One-Shot Example
+**入力 (ユーザーのお気に入り):**
+"ユージュアル・サスペクツ (1995)"
+シンドラーのリスト (1993)
 
-**Input (User Favorites):**
-"Usual Suspects, The (1995)"
-Schindler's List (1993)
+**入力 (推薦リスト):**
+1 "ショーシャンクの空に (1994)": 0.0385
+2 "インセプション (2010)": 0.0214
 
-**Input (Recommendation List):**
-1 "ショーシャンクの空に": 0.0385
-2 "インセプション": 0.0214
+**出力:**
+## 希望と再生のドラマ
 
-**Output:**
-<div class="font-sans text-gray-800 leading-relaxed p-2">
-  <h3 class="text-base font-bold text-gray-800 mb-3 flex items-center border-l-4 border-indigo-500 pl-2">
-    希望と再生のドラマ
-  </h3>
-  <div class="space-y-6 mb-8">
-    <div>
-      <div class="font-bold text-indigo-700 text-base">ショーシャンクの空に</div>
-      <div class="mt-1 mb-2">
-        <span class="bg-indigo-50 text-indigo-800 text-xs px-2 py-1 rounded border border-indigo-100 font-mono">
-          マッチスコア: 0.0385
-        </span>
-      </div>
-      <p class="text-sm text-gray-700">
-        無実の罪で投獄された男が、過酷な状況でも希望を失わずに生き抜く姿を描いたヒューマンドラマです。本分析では <strong>0.0385</strong> という高いスコアを記録しており、あなたの嗜好に強く合致していることを示します。お気に入りの <em>Schindler's List</em> にも見られる「極限状況における人間の尊厳」というテーマが、この作品の希望の物語と深く響き合います。
-      </p>
-    </div>
-  </div>
+### **ショーシャンクの空に (1994)**  
+\`\`\`Score: 0.0385\`\`\`
 
-  <h3 class="text-base font-bold text-gray-800 mb-3 flex items-center border-l-4 border-teal-500 pl-2">
-    認識と現実が揺らぐサスペンス
-  </h3>
-  <div class="space-y-6 mb-8">
-    <div>
-      <div class="font-bold text-teal-700 text-base">インセプション</div>
-      <div class="mt-1 mb-2">
-        <span class="bg-teal-50 text-teal-800 text-xs px-2 py-1 rounded border border-teal-100 font-mono">
-          マッチスコア: 0.0214
-        </span>
-      </div>
-      <p class="text-sm text-gray-700">
-        夢に潜入して潜在意識から情報を盗み出すという斬新な設定のSFアクション大作です。スコア <strong>0.0214</strong> により上位にランクインしており、あなたの嗜好ベクトルとの適合度が高いことが示されています。特に、<em>The Usual Suspects</em> で示されているような「予測不能な展開」や「複雑な脚本」への知的好奇心に、この作品の多層構造は非常によく合います。
-      </p>
-    </div>
-  </div>
-  
-  <div class="bg-gray-50 p-4 rounded-lg text-sm border border-gray-200 mt-6">
-    <h4 class="font-bold text-gray-700 mb-2">まとめ</h4>
-    <p class="text-gray-600">
-      あなたのお気に入りからは、逆境の中で人間性が輝く骨太なドラマと、先の読めない展開を持つ緻密なサスペンスへの強い嗜好が読み取れます。本ランキングでは、その傾向に沿って「物語の重み」と「構造の巧みさ」を兼ね備え、スコアが高い作品を優先して選定しています。
-    </p>
-  </div>
-</div>
+無実の罪で投獄された男が、絶望的な状況にあっても希望を失わない姿を描いた不朽のヒューマンドラマです。今回の分析でトップとなる**0.0385**のスコアを記録しており、データは本作があなたにとって必見であることを示唆しています。お気に入り作品である『シンドラーのリスト』に見られる「極限状態における人間の尊厳」という深いテーマは、本作で描かれる希望の物語と強く共鳴します。  
 
-# Actual Task
+## 認識と現実のサスペンス
 
-**User Favorites:**
-${favoriteMovies}
+### **インセプション (2010)**  
+\`\`\`Score: 0.0214\`\`\`
 
-**Recommendation List:**
+他人の夢に潜入し、潜在意識からアイデアを盗み出すという斬新な設定のSFアクション大作です。**0.0214**という高いスコアを獲得しており、あなたの嗜好ベクトルとの強い一致を示しています。具体的には、本作の多層的な構造が、『ユージュアル・サスペクツ』であなたが示している「予測不可能な展開」や「複雑な脚本」に対する知的好奇心に論理的に合致します。  
+
+---
+
+## まとめ
+この映画リストは、逆境の中で人間性が光る感動的なドラマや、予測不可能な展開を持つ精巧なサスペンス映画への強い選好を示しています。今回の推薦リストでは、「物語の重厚さ」と「構造の巧妙さ」を兼ね備えた、分析によるハイスコア作品を厳選しています。
+
+# 実際のタスク
+ユーザーのお気に入り:
+${favoriteText}
+
+推薦リスト:
 ${rankingText}
 
-**Generate the Output HTML:**`;
+Markdownのみを生成してください。`;
 }
