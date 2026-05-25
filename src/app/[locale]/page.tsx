@@ -136,7 +136,7 @@ export default function Home() {
       }
       const data = await res.json();
       // suggest returns names matching the prefix; require exact match
-      const exists = Array.isArray(data) && data.includes(normalizedName);
+      const exists = Array.isArray(data) && data.some((item: any) => item.title === normalizedName);
       if (!exists) {
         setError(t('errors.notFoundInDb', { name: normalizedName }));
         return;
