@@ -27,15 +27,16 @@ async function respondWithTopNodes(rawResult: unknown) {
   const ids = limitedResult.map((r: any) => r.id);
   const placeholders = ids.map(() => '?').join(',');
   const rows = await db.all(
-    `SELECT id, name, title_ja, ranking FROM nodes WHERE id IN (${placeholders})`,
+    `SELECT id, name, title_ja, ranking, year FROM nodes WHERE id IN (${placeholders})`,
     ids
   );
-  const idToMeta = new Map<number, { name: string; title_ja: string | null; ranking: number | null }>();
+  const idToMeta = new Map<number, { name: string; title_ja: string | null; ranking: number | null; year: number | null }>();
   rows.forEach((r: any) =>
     idToMeta.set(r.id, {
       name: r.name,
       title_ja: typeof r.title_ja === 'string' ? r.title_ja : null,
       ranking: typeof r.ranking === 'number' ? r.ranking : null,
+      year: typeof r.year === 'number' ? r.year : null,
     })
   );
 
@@ -45,6 +46,7 @@ async function respondWithTopNodes(rawResult: unknown) {
     title_ja: idToMeta.get(r.id)?.title_ja ?? null,
     score: r.score,
     ranking: idToMeta.get(r.id)?.ranking ?? null,
+    year: idToMeta.get(r.id)?.year ?? null,
   }));
 
   return NextResponse.json({ status: 'ok', top_nodes });
