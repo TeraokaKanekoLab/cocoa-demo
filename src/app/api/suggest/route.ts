@@ -14,33 +14,33 @@ export async function GET(req: Request) {
     const db = await getDb();
     if (locale === 'ja') {
       const prefixSuggestions = await db.all(
-        'SELECT COALESCE(title_ja, name) AS title FROM nodes WHERE COALESCE(title_ja, name) LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 11',
+        'SELECT COALESCE(title_ja, name) AS title, year FROM nodes WHERE COALESCE(title_ja, name) LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 11',
         `${query}%`
       );
       if (prefixSuggestions.length > 10) {
-        return NextResponse.json(prefixSuggestions.slice(0, 10).map((s: any) => s.title));
+        return NextResponse.json(prefixSuggestions.slice(0, 10).map((s: any) => ({ title: s.title, year: s.year ?? null })));
       }
 
       const partialSuggestions = await db.all(
-        'SELECT COALESCE(title_ja, name) AS title FROM nodes WHERE COALESCE(title_ja, name) LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 10',
+        'SELECT COALESCE(title_ja, name) AS title, year FROM nodes WHERE COALESCE(title_ja, name) LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 10',
         `%${query}%`
       );
-      return NextResponse.json(partialSuggestions.map((s: any) => s.title));
+      return NextResponse.json(partialSuggestions.map((s: any) => ({ title: s.title, year: s.year ?? null })));
     }
 
     const prefixSuggestions = await db.all(
-      'SELECT name FROM nodes WHERE name LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 11',
+      'SELECT name, year FROM nodes WHERE name LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 11',
       `${query}%`
     );
     if (prefixSuggestions.length > 10) {
-      return NextResponse.json(prefixSuggestions.slice(0, 10).map((s: any) => s.name));
+      return NextResponse.json(prefixSuggestions.slice(0, 10).map((s: any) => ({ title: s.name, year: s.year ?? null })));
     }
 
     const partialSuggestions = await db.all(
-      'SELECT name FROM nodes WHERE name LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 10',
+      'SELECT name, year FROM nodes WHERE name LIKE ? ORDER BY COALESCE(ranking, 2147483647) ASC LIMIT 10',
       `%${query}%`
     );
-    return NextResponse.json(partialSuggestions.map((s: any) => s.name));
+    return NextResponse.json(partialSuggestions.map((s: any) => ({ title: s.name, year: s.year ?? null })));
   } catch (error) {
     console.error('Suggest Error:', error);
     return NextResponse.json([], { status: 500 });
