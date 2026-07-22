@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>USER_MANUAL.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="利用マニュアル">利用マニュアル</h1>
+<h2 id="1-アプリ概要">1. アプリ概要</h2>
+<p>本アプリは、好みの映画名を基におすすめの映画を推薦するデモアプリです。ユーザーが指定した映画と重みに基づいてサーバー側で解析を実行し、上位の映画をランキング形式で表示し、最終的には推薦文を出力します。</p>
+<h2 id="2-画面構成">2. 画面構成</h2>
+<p>メイン画面は次の領域で構成されています。</p>
+<ul>
+<li><code>1. クエリビルダー</code>: 映画名と重みを入力して解析条件を作る領域</li>
+<li><code>2. 事後調整</code>: 解析後の結果をスライダーで調整する領域</li>
+<li><code>上位の映画</code>: 解析結果のランキングを表示する領域</li>
+<li><code>AI分析</code>: ランキングの説明をAIモデルに生成させる領域</li>
+</ul>
+<h2 id="3-基本的な使い方">3. 基本的な使い方</h2>
+<h3 id="31-映画を追加する">3.1 映画を追加する</h3>
+<ol>
+<li><code>映画名</code> 入力欄に映画名を入力します。</li>
+<li>2文字以上入力すると候補が表示されます。</li>
+<li>候補から映画名を選ぶか、候補と完全に一致する映画名を入力します。</li>
+<li><code>重み</code> を指定します。通常は <code>1</code> のままで使えます。</li>
+<li><code>追加</code> を押します。</li>
+</ol>
+<p>入力した映画はクエリリストに追加されます。同じ映画を重複して追加することはできません。</p>
+<p>※ データセットの都合上、最新作・アメリカで公開されていない映画を追加することはできません。</p>
+<h3 id="32-重みを調整する">3.2 重みを調整する</h3>
+<p>クエリリストに追加された映画ごとに <code>重み</code> を変更できます。</p>
+<ul>
+<li>重みを大きくすると、その映画の影響を強くできます。</li>
+<li>通常は <code>1</code> を基準にします。</li>
+<li>解析実行中は重みを変更できません。</li>
+</ul>
+<h3 id="33-映画をリストから削除する">3.3 映画をリストから削除する</h3>
+<p>クエリリスト内の映画の右側にある <code>✕</code> を押すと、その映画を解析条件から削除できます。</p>
+<h3 id="34-解析を実行する">3.4 解析を実行する</h3>
+<ol>
+<li>1件以上の映画をクエリリストに追加します。</li>
+<li><code>解析を実行</code> を押します。</li>
+<li>解析が完了すると、上位の映画がランキングとして表示されます。</li>
+</ol>
+<p>※ グラフ解析エンジンが準備中の場合、ボタンには <code>グラフを読み込み中...</code> と表示されます。準備が完了するまで待ってから実行してください。</p>
+<h2 id="4-解析結果の見方">4. 解析結果の見方</h2>
+<p>解析結果は <code>上位の映画</code> テーブルに表示されます。</p>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>順位</td>
+<td>現在表示されている結果内での順位</td>
+</tr>
+<tr>
+<td>作品名</td>
+<td>推薦された映画名</td>
+</tr>
+<tr>
+<td>スコア</td>
+<td>入力した映画との関連度を表す値</td>
+</tr>
+<tr>
+<td>操作</td>
+<td>結果から除外する操作</td>
+</tr>
+</tbody>
+</table>
+<p>画面には、入力済みの映画と除外済みの映画を除いた上位10件が表示されます。</p>
+<p>作品名をクリックすると、その映画がクエリリストに重み <code>1</code> で追加されます。気になる結果を追加して再度解析することで、探索を繰り返せます。</p>
+<h2 id="5-事後調整の使い方">5. 事後調整の使い方</h2>
+<p>解析後に <code>2. 事後調整</code> が表示されます。</p>
+<p>スライダーは <code>-1</code> から <code>+1</code> の範囲で動かせます。</p>
+<ul>
+<li><code>メジャー (+1)</code> に近づけると、人気な映画が上位に出やすくなります。結果として、パーソナライズ性が失われることがあります。</li>
+<li><code>マイナー (-1)</code> に近づけると、直接的な関連の強い映画が上位に出やすくなります。結果として、マイナーな映画が推薦されることがあります。</li>
+<li>スライダーを動かすと、現在の解析結果に対してサーバー側で再評価が行われます。</li>
+</ul>
+<p>はじめは <code>0.00</code> です。まずは <code>0.00</code> の結果を確認し、必要に応じて少しずつ動かしてください。</p>
+<h2 id="6-映画を除外する">6. 映画を除外する</h2>
+<p>ランキング内の <code>除外</code> を押すと、その映画は現在の結果一覧から非表示になります。</p>
+<p>除外した映画は <code>除外した映画</code> に表示されます。除外を取り消したい場合は、該当映画の右側にある <code>✕</code> を押してください。</p>
+<p>除外リストに入っている映画は、次回の解析でも結果に出にくくなるように扱われます。</p>
+<h2 id="7-ai分析を使う">7. AI分析を使う</h2>
+<p>解析結果が表示された後、AIモデルを選択して <code>AIで説明</code> を押すと、ランキングの説明が生成されます。</p>
+<p>選択できるモデルは次のとおりです。Groqは高速、ChatGPTは精緻な傾向があります。
+まずは、<code>Groq · GPT-OSS 120B</code> で試すことをおすすめします。</p>
+<ul>
+<li><code>Groq · GPT-OSS 20B</code></li>
+<li><code>Groq · GPT-OSS 120B</code></li>
+<li><code>ChatGPT · GPT-5</code></li>
+<li><code>ChatGPT · GPT-5 mini</code></li>
+<li><code>ChatGPT · GPT-5 nano</code></li>
+</ul>
+<p>AI分析では、現在表示されているランキング、スコア、クエリリストの映画が送信されます。生成結果は <code>AI分析</code> 欄に表示されます。</p>
+<h2 id="8-言語を切り替える">8. 言語を切り替える</h2>
+<p>画面右上の <code>JA</code> / <code>EN</code> で表示言語を切り替えられます。</p>
+<ul>
+<li><code>JA</code>: 日本語表示。映画名は日本語タイトル優先で検索・表示されます。</li>
+<li><code>EN</code>: 英語表示。映画名は英語名で検索・表示されます。</li>
+</ul>
+<p>映画名の検証は現在の言語に応じて行われます。候補に表示された表記をそのまま使うと入力エラーを避けやすくなります。</p>
+<h2 id="9-よくあるエラーと対処">9. よくあるエラーと対処</h2>
+<h3 id="映画名を入力してください"><code>映画名を入力してください</code></h3>
+<p>映画名が空のまま <code>追加</code> を押しています。映画名を入力してください。</p>
+<h3 id="作品名-はすでにリストにあります"><code>&quot;作品名&quot; はすでにリストにあります</code></h3>
+<p>同じ映画をクエリリストに追加しようとしています。既存の映画の重みを変更するか、別の映画を追加してください。</p>
+<h3 id="作品名-はデータベースに見つかりません"><code>&quot;作品名&quot; はデータベースに見つかりません</code></h3>
+<p>入力した映画名がデータベースの候補と完全一致していません。候補に表示された映画名を選択してください。</p>
+<h3 id="リクエストがタイムアウトしました30秒"><code>リクエストがタイムアウトしました（30秒）</code></h3>
+<p>解析に時間がかかりすぎています。</p>
+<ul>
+<li>入力映画の数を減らして再実行してください。</li>
+<li>しばらく待ってから再実行してください。</li>
+</ul>
+
+</body>
+</html>
