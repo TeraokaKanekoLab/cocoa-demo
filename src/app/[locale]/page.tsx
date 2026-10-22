@@ -8,7 +8,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 // 型定義
 type QueryItem = { name: string; weight: number };
-type ResultItem = { id: number; score: number; name?: string; title_ja?: string | null; ranking?: number | null };
+type ResultItem = { id: number; score: number; name?: string; title_ja?: string | null; ranking?: number | null; year?: number | null };
 type BlacklistEntry = { id: number; name?: string };
 const MARKDOWN_LIST_COLOR_CLASSES = '[&>li:nth-child(1)]:text-indigo-700 [&>li:nth-child(2)]:text-teal-700 [&>li:nth-child(3)]:text-sky-700';
 
@@ -29,7 +29,7 @@ export default function Home() {
   // 入力フォーム用
   const [inputName, setInputName] = useState('');
   const [inputWeight, setInputWeight] = useState<number>(1.0);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<Array<{ title: string; year: number | null }>>([]);
 
   // サーバー(C++)の準備状態
   const [serverReady, setServerReady] = useState(false);
@@ -136,7 +136,7 @@ export default function Home() {
       }
       const data = await res.json();
       // suggest returns names matching the prefix; require exact match
-      const exists = Array.isArray(data) && data.includes(normalizedName);
+      const exists = Array.isArray(data) && data.some((item: any) => item.title === normalizedName);
       if (!exists) {
         setError(t('errors.notFoundInDb', { name: normalizedName }));
         return;
@@ -454,9 +454,10 @@ export default function Home() {
               className="h-10 w-full rounded-lg border border-slate-300 px-3 text-base shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
             />
             <datalist id="suggestions-list">
-              {suggestions.map((s: string) => (
-                <option key={s} value={s} />
-              ))}
+              {suggestions.map((s) => {
+                const displayValue = s.year ? `${s.title} (${s.year})` : s.title;
+                return <option key={`${s.title}-${s.year}`} value={s.title} label={displayValue} />;
+              })}
             </datalist>
           </div>
 
@@ -598,6 +599,9 @@ export default function Home() {
                               className="text-left text-base font-semibold text-sky-600 transition hover:text-sky-700"
                             >
                               {getDisplayName(res)}
+                              {typeof res.year === 'number' && (
+                                <span className="ml-1 text-gray-400">({res.year})</span>
+                              )}
                             </button>
                             {typeof res.ranking === 'number' ? (
                               <span className="text-xs text-slate-500">#{res.ranking}</span>
