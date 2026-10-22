@@ -2,6 +2,18 @@
   "name": "graph-app",
   "version": "0.1.0",
   "private": true,
+  "description": "Graph Analysis Demo Application",
+  "homepage": "https://github.com/TeraokaKanekoLab/cocoa-demo#readme",
+  "bugs": {
+    "url": "https://github.com/TeraokaKanekoLab/cocoa-demo/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TeraokaKanekoLab/cocoa-demo.git"
+  },
+  "license": "MIT",
+  "author": "",
+  "main": "next.config.js",
   "scripts": {
     "dev": "node server/multiport-server.js --dev",
     "build": "next build",
@@ -9,24 +21,23 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "14.1.0",
-    "next-intl": "^3.22.0",
+    "next": "^16.4.2",
+    "next-intl": "^4.14.9",
     "openai": "^4.104.0",
     "react": "^18",
     "react-dom": "^18",
     "react-markdown": "^10.1.0",
     "sqlite": "^5.1.1",
-    "sqlite3": "5.1.7"
+    "sqlite3": "^6.0.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.20",
-    "eslint": "^8",
-    "eslint-config-next": "14.1.0",
     "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.13",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5"
   }
 }

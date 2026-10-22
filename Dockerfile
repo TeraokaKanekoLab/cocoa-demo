@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 node:20-bullseye-slim
+FROM --platform=linux/amd64 node:26-trixie-slim
 
 # 1. 必要なツールのインストール
 # git: CMakeのFetchContentでライブラリを取得するために必要

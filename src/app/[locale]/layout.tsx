@@ -11,9 +11,10 @@ export async function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export async function generateMetadata({ params }: { params: { locale: string } }) {
-  const locale = String(params.locale || '').toLowerCase();
-  const isJa = locale.startsWith('ja');
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const normalizedLocale = String(locale || '').toLowerCase();
+  const isJa = normalizedLocale.startsWith('ja');
   return {
     title: isJa ? 'デモアプリ' : 'Demo App',
     description: isJa ? 'Next.js + C++ バックエンドのデモ' : 'Next.js with C++ Backend',
@@ -25,9 +26,10 @@ export default async function LocaleLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
-  const locale = params.locale as Locale;
+  const { locale: localeParam } = await params;
+  const locale = localeParam as Locale;
   if (!routing.locales.includes(locale)) {
     notFound();
   }
